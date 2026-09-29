@@ -85,6 +85,26 @@
         </details>
       </section>
     </main>
+
+    <section class="card vocab">
+      <h3>📖 단어 모으기</h3>
+      <div class="vocab-controls">
+        <label class="file-button">
+          📄 PDF 선택
+          <input type="file" id="vocab-file" accept="application/pdf,.pdf" />
+        </label>
+        <span id="vocab-file-name">선택한 파일 없음</span>
+      </div>
+      <div class="vocab-controls">
+        <select id="vocab-from" aria-label="시작 Day"></select>
+        <span>~</span>
+        <select id="vocab-to" aria-label="끝 Day"></select>
+        <button id="vocab-run" type="button" disabled>단어 뽑기</button>
+        <button id="vocab-copy-all" type="button" hidden>📋 전체 복사</button>
+      </div>
+      <p id="vocab-status">PDF는 이 기기 안에서만 열려요. 고른 Day 쪽 이미지만 Gemini로 보내요.</p>
+      <div id="vocab-results"></div>
+    </section>
   </div>
 
   <div id="toast" hidden></div>
@@ -115,5 +135,6 @@
   </div>
 
   <script type="module" src="study.js"></script>
+  <script type="module" src="vocab.js"></script>
 </body>
 </html>
