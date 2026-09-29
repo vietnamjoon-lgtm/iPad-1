@@ -15,7 +15,7 @@
  * 응답:  { ok: true, words: [{ word, meaning }, ...] }  또는  { ok: false, error }
  */
 
-const DEFAULT_MODEL = "gemini-3.8-flash";
+const DEFAULT_MODEL = "gemini-3.5-flash-lite"; // 빠르고 가벼운 모델 (생각을 최소로 해서 응답이 빠름)
 
 const PROMPT = [
   "이 이미지들은 영어 단어장의 한 Day 분량 페이지들이에요. 페이지 순서대로 읽어 주세요.",

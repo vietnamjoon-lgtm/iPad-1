@@ -24,8 +24,10 @@ const DAYS = DAY_START.length;
 
 const IMAGE_WIDTH = 1400; // 쪽 이미지 가로 픽셀 (글자가 읽힐 만큼, 전송이 무겁지 않게)
 const JPEG_QUALITY = 0.75;
-const BUSY_RETRIES = 3; // Gemini가 붐빌 때(503/429) 자동으로 다시 시도하는 횟수
-const BUSY_WAIT_MS = 10_000; // 다시 시도 전 기다리는 시간 (10초, 20초, 30초…)
+const PARALLEL = 4; // 한 번에 동시에 Gemini로 보내는 쪽 수
+const REQUEST_TIMEOUT_MS = 90_000; // 한 쪽 응답을 이만큼 기다려도 안 오면 끊고 다시 시도
+const BUSY_RETRIES = 3; // Gemini가 붐비거나(503/429) 응답이 없을 때 자동으로 다시 시도하는 횟수
+const BUSY_WAIT_MS = 5_000; // 다시 시도 전 기다리는 시간 (5초, 10초, 15초…)
 
 const $ = (id) => document.getElementById(id);
 
@@ -182,37 +184,65 @@ async function pageToJpegBase64(pageNo) {
 
 // ---------- 추출 ----------
 
+// 쪽 이미지 한 장을 웹앱으로 보내 단어를 받는다. 붐빔(503/429)·무응답이면 잠시 뒤 다시 시도.
+async function extractPage(day, image) {
+  const body = JSON.stringify({ day, images: [image] });
+  for (let attempt = 1; ; attempt++) {
+    let error;
+    try {
+      // text/plain으로 보내면 Apps Script가 CORS 사전 요청 없이 받고, 응답도 읽을 수 있다
+      const res = await fetch(VOCAB_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body,
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+      const data = await res.json();
+      if (data.ok) return data.words;
+      error = data.error || "알 수 없는 오류";
+      if (!/오류 (503|429)/.test(error)) throw new Error(error);
+    } catch (err) {
+      if (err.name !== "TimeoutError") throw err;
+      error = "Gemini 응답이 너무 늦어요";
+    }
+    if (attempt > BUSY_RETRIES) throw new Error(error);
+    await new Promise((r) => setTimeout(r, BUSY_WAIT_MS * attempt));
+  }
+}
+
 async function extractDay(day) {
   const [from, to] = dayPages(day);
   if (to > pdfDoc.numPages) {
     throw new Error(`PDF가 ${pdfDoc.numPages}쪽까지라서 ${from}–${to}쪽을 읽을 수 없어요`);
   }
-  const images = [];
-  for (let p = from; p <= to; p++) {
-    setStatus(`Day ${day}: 쪽 이미지 만드는 중 (${p - from + 1}/${to - from + 1})`);
-    images.push(await pageToJpegBase64(p));
-  }
+  const total = to - from + 1;
+  const perPage = new Array(total);
+  let next = 0;
+  let done = 0;
+  const show = () => setStatus(`Day ${day}: Gemini가 읽는 중… (${done}/${total}쪽)`);
+  show();
 
-  const body = JSON.stringify({ day, images });
-  for (let attempt = 1; ; attempt++) {
-    setStatus(
-      attempt === 1
-        ? `Day ${day}: Gemini가 단어를 읽는 중… (30초~1분 걸려요)`
-        : `Day ${day}: Gemini가 붐벼서 다시 시도하는 중… (${attempt}/${BUSY_RETRIES + 1})`
-    );
-    // text/plain으로 보내면 Apps Script가 CORS 사전 요청 없이 받고, 응답도 읽을 수 있다
-    const res = await fetch(VOCAB_SCRIPT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body,
-    });
-    const data = await res.json();
-    if (data.ok) return data.words;
-    const error = data.error || "알 수 없는 오류";
-    // 503(사용량 폭주)·429(잠깐 한도 초과)는 잠시 뒤 다시 하면 대개 된다
-    if (attempt > BUSY_RETRIES || !/오류 (503|429)/.test(error)) throw new Error(error);
-    await new Promise((r) => setTimeout(r, BUSY_WAIT_MS * attempt));
-  }
+  // 쪽마다 따로, PARALLEL 개씩 동시에 보낸다 (이미지 변환은 한 번에 한 쪽씩)
+  let rendering = Promise.resolve();
+  const worker = async () => {
+    while (next < total) {
+      const i = next++;
+      const image = await (rendering = rendering.then(() => pageToJpegBase64(from + i)));
+      perPage[i] = await extractPage(day, image);
+      done++;
+      show();
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(PARALLEL, total) }, worker));
+
+  // 쪽 순서대로 합치고, 두 쪽에 걸쳐 같은 표제어가 나오면 한 번만
+  const seen = new Set();
+  return perPage.flat().filter((w) => {
+    const key = w.word.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 async function run(days) {
