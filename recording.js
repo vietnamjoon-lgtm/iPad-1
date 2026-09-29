@@ -78,7 +78,7 @@ export async function saveRecording(blob, filename, setStatus, { download = true
 
 // ---------- 못 보낸 녹화 보관함 (IndexedDB) ----------
 // 창을 닫으면 마지막 조각을 보낼 시간이 없다. 그래서 녹화 조각을 1초마다 브라우저 저장소에
-// 적어 두고, 드라이브로 보내면 지운다. 다음에 아무 페이지나 열면 남아 있는 걸 마저 보낸다.
+// 적어 두고, 드라이브로 보내면 지운다. 남아 있는 건 아래 retryLeftovers가 마저 보낸다.
 
 const STORE = "chunks";
 let dbPromise = null;
@@ -115,14 +115,20 @@ function forgetSegment(segId) {
   tx("readwrite", (s) => s.delete(segRange(segId))).catch(() => {});
 }
 
+const liveSegments = new Set(); // 지금 녹화 중인 묶음
+const uploading = new Set(); // 지금 보내는 중인 묶음 (두 번 보내지 않게)
+
 // 파일로 묶어서 보내고, 보냈으면 보관함에서 지운다
 async function uploadSegment(segId, chunks, type, filename) {
   const blob = new Blob(chunks, { type });
   if (blob.size === 0) return forgetSegment(segId);
-  if (await saveRecording(blob, filename, () => {}, { download: false })) forgetSegment(segId);
+  uploading.add(segId);
+  try {
+    if (await saveRecording(blob, filename, () => {}, { download: false })) forgetSegment(segId);
+  } finally {
+    uploading.delete(segId);
+  }
 }
-
-const liveSegments = new Set();
 
 // 이전에 창을 닫느라 못 보낸 녹화를 보낸다 (10초 넘게 안 쓰인 것만 — 다른 탭에서 녹화 중인 건 건드리지 않음)
 async function sendLeftovers() {
@@ -137,17 +143,39 @@ async function sendLeftovers() {
     groups.get(segId).push(records[i]);
   });
   for (const [segId, recs] of groups) {
-    if (liveSegments.has(segId) || Date.now() - Math.max(...recs.map((r) => r.t)) < 10_000) continue;
+    if (liveSegments.has(segId) || uploading.has(segId)) continue;
+    if (Date.now() - Math.max(...recs.map((r) => r.t)) < 10_000) continue;
     await uploadSegment(segId, recs.map((r) => r.blob), recs[0].type, recs[0].filename);
   }
 }
 
-if (window.indexedDB) sendLeftovers().catch((err) => console.warn("보관함을 못 읽었어요:", err));
+let checking = false;
+async function retryLeftovers() {
+  if (checking || !window.indexedDB || !APPS_SCRIPT_URL) return;
+  checking = true;
+  try {
+    await sendLeftovers();
+  } catch (err) {
+    console.warn("보관함을 못 읽었어요:", err);
+  } finally {
+    checking = false;
+  }
+}
+
+// 페이지를 열 때, 다시 돌아왔을 때(아이패드는 새로고침 없이 멈췄던 화면을 이어 보여줌),
+// 인터넷이 다시 연결됐을 때, 그리고 켜져 있는 동안 1분마다 못 보낸 녹화를 보낸다.
+retryLeftovers();
+window.addEventListener("pageshow", retryLeftovers);
+window.addEventListener("online", retryLeftovers);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") setTimeout(retryLeftovers, 3000);
+});
+setInterval(retryLeftovers, 60_000);
 
 // ---------- 계속 녹화 ----------
-// 카메라를 켠 순간부터 페이지를 닫을 때까지 계속 녹화해서 segmentMs마다 파일 하나씩
-// 드라이브로만 보낸다 (기기에 다운로드하지 않음). 3분마다 녹화기를 새로 시작해서
-// 파일 하나하나가 따로 재생되게 한다. 탁구·손 3D·공부 모드가 같이 쓴다.
+// 카메라를 켠 순간부터 페이지를 닫을 때까지 계속 녹화해서 segmentMs(기본 20초)마다
+// 파일 하나씩 드라이브로만 보낸다 (기기에 다운로드하지 않음). 짧게 끊어서 거의 실시간으로
+// 올라가고, 창을 닫아도 최대 20초어치만 늦게 간다. 탁구·손 3D·공부 모드가 같이 쓴다.
 
 let recStream = null;
 let recOptions = null;
@@ -197,7 +225,7 @@ function stopSegment() {
   recorder = null;
 }
 
-export function recordContinuously(stream, { prefix, segmentMs = 3 * 60 * 1000, bitrate = 300_000 }) {
+export function recordContinuously(stream, { prefix, segmentMs = 20_000, bitrate = 300_000 }) {
   if (stream === recStream) return;
   stopSegment(); // "다시 시도"로 카메라를 새로 켰으면 새 카메라로 이어서
   recStream = stream;
