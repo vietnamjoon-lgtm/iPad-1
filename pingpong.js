@@ -3,17 +3,16 @@ import {
   FilesetResolver,
   PoseLandmarker,
 } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
-import { pickRecMime, timestampName, saveRecording } from "./recording.js";
+import { recordContinuously } from "./recording.js";
 
 const WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
 const MODEL_URL =
   "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
 
 // ---------- 녹화 설정 ----------
-// Apps Script 웹앱 URL은 recording.js 에 있어요 (공부 모드와 같이 씀).
+// 카메라를 켠 순간부터 페이지를 닫을 때까지 3분마다 드라이브로 보낸다 (recording.js).
 
 const REC = {
-  MAX_MS: 3 * 60 * 1000, // 최대 녹화 길이 (기본 3분). 길이 제한 = 용량 제한.
   BITRATE: 300_000, // 영상 비트레이트 (bps). 낮출수록 파일이 작아짐.
   WIDTH: 480, // 녹화용 카메라 해상도 (낮게)
   HEIGHT: 360,
@@ -463,7 +462,6 @@ function endGame(winner) {
   $("start").disabled = false;
   $("hint").textContent = "";
   $("overlay-screen").hidden = false;
-  stopRecording(); // 게임 끝 → 녹화 종료 후 업로드/저장
 }
 
 function newGame() {
@@ -764,57 +762,6 @@ function animate() {
 
 // ---------- 시작 ----------
 
-// ---------- 녹화 ----------
-// 카메라 영상을 낮은 화질로 녹화했다가, 게임이 끝나면(또는 최대 길이에 도달하면)
-// 내 구글 드라이브로 보낸다. 녹화 중에는 화면 구석에 빨간 ● REC 표시가 뜬다.
-
-let mediaRecorder = null;
-let recChunks = [];
-let recExt = "webm";
-let recCapTimer = 0;
-
-function startRecording(stream) {
-  if (!window.MediaRecorder) return; // 지원 안 하는 브라우저면 녹화 없이 게임만
-  const mimeType = pickRecMime();
-  recExt = mimeType.includes("mp4") ? "mp4" : "webm";
-  try {
-    mediaRecorder = new MediaRecorder(
-      stream,
-      mimeType ? { mimeType, videoBitsPerSecond: REC.BITRATE } : { videoBitsPerSecond: REC.BITRATE }
-    );
-  } catch (err) {
-    console.warn("녹화를 시작할 수 없어요:", err);
-    mediaRecorder = null;
-    return;
-  }
-  recChunks = [];
-  mediaRecorder.ondataavailable = (e) => {
-    if (e.data && e.data.size > 0) recChunks.push(e.data);
-  };
-  mediaRecorder.onstop = onRecordingStop;
-  mediaRecorder.start(1000);
-
-  $("rec").hidden = false;
-  // 최대 길이에 도달하면 자동으로 멈춘다 (그 시점까지의 영상을 업로드)
-  recCapTimer = setTimeout(() => stopRecording(), REC.MAX_MS);
-}
-
-function stopRecording() {
-  clearTimeout(recCapTimer);
-  if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
-}
-
-function onRecordingStop() {
-  $("rec").hidden = true;
-  const type = mediaRecorder?.mimeType || "video/webm";
-  const blob = new Blob(recChunks, { type });
-  recChunks = [];
-  mediaRecorder = null;
-  if (blob.size > 0) {
-    saveRecording(blob, `${timestampName()}.${recExt}`, (t) => ($("upload-status").textContent = t));
-  }
-}
-
 async function setupTracking() {
   if (!navigator.mediaDevices?.getUserMedia) {
     throw new Error("이 브라우저는 카메라를 지원하지 않아요 (https 또는 localhost에서 열어 주세요)");
@@ -832,7 +779,7 @@ async function setupTracking() {
   video.srcObject = stream;
   await video.play();
 
-  startRecording(stream);
+  recordContinuously(stream, { prefix: "pingpong", bitrate: REC.BITRATE });
 
   $("start").textContent = "팔 인식 모델 불러오는 중…";
   const vision = await FilesetResolver.forVisionTasks(WASM_URL);

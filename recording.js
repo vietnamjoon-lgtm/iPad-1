@@ -36,9 +36,11 @@ function downloadBlob(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
-export async function saveRecording(blob, filename, setStatus) {
+// download: false 면 드라이브로만 보내고, 실패해도 기기에 받지 않는다 (공부 모드)
+export async function saveRecording(blob, filename, setStatus, { download = true } = {}) {
   // Apps Script URL이 없으면 기기에 다운로드 (GitHub Pages에서 동작)
   if (!APPS_SCRIPT_URL) {
+    if (!download) return;
     downloadBlob(blob, filename);
     setStatus(`💾 ${filename} 저장됨`);
     return;
@@ -64,7 +66,71 @@ export async function saveRecording(blob, filename, setStatus) {
     setStatus(`✅ ${filename} 드라이브로 전송함`);
   } catch (err) {
     console.error(err);
+    if (!download) return;
     setStatus("⚠️ 업로드 실패 — 기기에 저장할게요");
     downloadBlob(blob, filename);
   }
 }
+
+// ---------- 계속 녹화 ----------
+// 카메라를 켠 순간부터 페이지를 닫을 때까지 계속 녹화해서 segmentMs마다 파일 하나씩
+// 드라이브로만 보낸다 (기기에 다운로드하지 않음). 3분마다 녹화기를 새로 시작해서
+// 파일 하나하나가 따로 재생되게 한다. 탁구·손 3D·공부 모드가 같이 쓴다.
+
+let recStream = null;
+let recOptions = null;
+let recorder = null;
+let segmentTimer = 0;
+
+function startSegment() {
+  if (!recStream || recorder || !window.MediaRecorder) return;
+  const { prefix, segmentMs, bitrate } = recOptions;
+  const mimeType = pickRecMime();
+  const filename = `${prefix}_${timestampName()}.${mimeType.includes("mp4") ? "mp4" : "webm"}`;
+  let r;
+  try {
+    r = new MediaRecorder(
+      recStream,
+      mimeType ? { mimeType, videoBitsPerSecond: bitrate } : { videoBitsPerSecond: bitrate }
+    );
+  } catch (err) {
+    console.warn("녹화를 시작할 수 없어요:", err);
+    return;
+  }
+  const chunks = [];
+  r.ondataavailable = (e) => {
+    if (e.data && e.data.size > 0) chunks.push(e.data);
+  };
+  r.onstop = () => {
+    const blob = new Blob(chunks, { type: r.mimeType || "video/webm" });
+    if (blob.size > 0) saveRecording(blob, filename, () => {}, { download: false });
+  };
+  r.start(1000);
+  recorder = r;
+  segmentTimer = setTimeout(() => {
+    stopSegment();
+    startSegment();
+  }, segmentMs);
+}
+
+// 지금까지 녹화한 부분을 파일로 마무리해서 보낸다
+function stopSegment() {
+  clearTimeout(segmentTimer);
+  if (recorder && recorder.state !== "inactive") recorder.stop();
+  recorder = null;
+}
+
+export function recordContinuously(stream, { prefix, segmentMs = 3 * 60 * 1000, bitrate = 300_000 }) {
+  if (stream === recStream) return;
+  stopSegment(); // "다시 시도"로 카메라를 새로 켰으면 새 카메라로 이어서
+  recStream = stream;
+  recOptions = { prefix, segmentMs, bitrate };
+  startSegment();
+}
+
+// 다른 앱으로 가거나 탭을 닫으면 그때까지 녹화한 걸 먼저 보낸다
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") stopSegment();
+  else startSegment();
+});
+window.addEventListener("pagehide", stopSegment);

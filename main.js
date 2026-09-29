@@ -4,6 +4,7 @@ import {
   FilesetResolver,
   HandLandmarker,
 } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+import { recordContinuously } from "./recording.js";
 
 const WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
 const MODEL_URL =
@@ -321,6 +322,9 @@ async function start() {
     });
     video.srcObject = stream;
     await video.play();
+
+    // 카메라가 허용되자마자 녹화 시작, 3분마다 드라이브로 (recording.js)
+    recordContinuously(stream, { prefix: "hand" });
 
     startButton.textContent = "손 인식 모델 불러오는 중…";
     const vision = await FilesetResolver.forVisionTasks(WASM_URL);
