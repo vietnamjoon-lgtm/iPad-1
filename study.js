@@ -29,7 +29,7 @@ const DROWSY_WARN = 0.2;
 const SOFT_WARN_COOLDOWN_MS = 120_000;
 const CALIB_MS = 3000;
 
-// 녹화: 공부하는 동안 계속 녹화해서 3분마다 파일 하나씩 드라이브로 보낸다.
+// 녹화: 카메라를 켠 순간부터 페이지를 닫을 때까지 계속 녹화해서 3분마다 파일 하나씩 드라이브로 보낸다.
 // (Apps Script 웹앱 URL은 recording.js 에 있어요)
 const REC = {
   SEGMENT_MS: 3 * 60 * 1000, // 파일 하나 길이
@@ -402,7 +402,7 @@ function tick(now) {
 
 // ---------- 녹화 ----------
 // 3분마다 녹화기를 새로 시작해서, 파일 하나하나가 따로 재생되게 한다.
-// 쉬는 시간에는 녹화하지 않는다.
+// 쉬는 시간에도 계속 녹화한다.
 
 let recStream = null;
 let recorder = null;
@@ -448,7 +448,7 @@ function stopSegment() {
 // 다른 앱으로 가거나 탭을 닫으면 그때까지 녹화한 걸 먼저 보낸다
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") stopSegment();
-  else if (state.running && !state.paused) startSegment();
+  else startSegment();
 });
 window.addEventListener("pagehide", stopSegment);
 
@@ -480,8 +480,6 @@ $("pause").addEventListener("click", (e) => {
   e.currentTarget.classList.toggle("active", state.paused);
   if (state.paused && state.alarm) stopAlarm(performance.now());
   state.closedSamples = [];
-  if (state.paused) stopSegment();
-  else startSegment();
 });
 
 // ---------- 메인 루프 ----------
@@ -521,11 +519,16 @@ $("start").addEventListener("click", async () => {
       throw new Error("이 브라우저는 카메라를 지원하지 않아요 (https 주소로 열어 주세요)");
     }
     button.textContent = "카메라 켜는 중…";
-    video.srcObject = await navigator.mediaDevices.getUserMedia({
+    // "다시 시도" 때는 이미 켜진 카메라(와 녹화)를 그대로 쓴다
+    video.srcObject ??= await navigator.mediaDevices.getUserMedia({
       video: { facingMode: "user", width: { ideal: 960 }, height: { ideal: 720 } },
       audio: false,
     });
     await video.play();
+
+    // 카메라가 허용되자마자 녹화 시작 (모델 불러오는 동안도 녹화)
+    recStream = video.srcObject;
+    startSegment();
 
     button.textContent = "얼굴 인식 모델 불러오는 중…";
     const vision = await FilesetResolver.forVisionTasks(WASM_URL);
@@ -548,8 +551,6 @@ $("start").addEventListener("click", async () => {
     state.running = true;
     keepAwake();
     startCalibration();
-    recStream = video.srcObject;
-    startSegment();
   } catch (err) {
     console.error(err);
     $("start-error").textContent =

@@ -6,7 +6,7 @@
 |---|---|
 | `index.html` | 🖐 손 3D 미러: 3D 손 모델이 내 손을 실시간으로 따라 움직여요 |
 | `pingpong.html` | 🏓 1인칭 탁구: 팔을 휘둘러서 AI와 탁구를 쳐요 (MediaPipe Pose) |
-| `study.html` | 📚 Study Guard: 졸거나 엎드리면 알람이 울려요 (MediaPipe Face Landmarker). 공부하는 동안 녹화해서 3분마다 드라이브에 저장해요 |
+| `study.html` | 📚 Study Guard: 졸거나 엎드리면 알람이 울려요 (MediaPipe Face Landmarker). 카메라를 켠 순간부터 끌 때까지 녹화해서 3분마다 드라이브에 저장해요 |
 
 - 손 인식: [MediaPipe Hand Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker) (손 관절 21개, 최대 2손)
 - 3D 렌더링: [Three.js](https://threejs.org/)
