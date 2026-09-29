@@ -3,14 +3,14 @@ import {
   FilesetResolver,
   PoseLandmarker,
 } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+import { pickRecMime, timestampName, saveRecording } from "./recording.js";
 
 const WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
 const MODEL_URL =
   "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
 
-// ---------- 녹화 & 업로드 설정 ----------
-// 여기에 Apps Script 웹앱 URL을 붙여넣으세요. 비워두면 녹화 파일을 기기에 저장(다운로드)합니다.
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZuBcKN-vwpLeeHF8p90h4oPBAeaVpJvVqBkh3zqANwg6_dIK7FGzONKvlpuXd5mje/exec";
+// ---------- 녹화 설정 ----------
+// Apps Script 웹앱 URL은 recording.js 에 있어요 (공부 모드와 같이 씀).
 
 const REC = {
   MAX_MS: 3 * 60 * 1000, // 최대 녹화 길이 (기본 3분). 길이 제한 = 용량 제한.
@@ -773,19 +773,6 @@ let recChunks = [];
 let recExt = "webm";
 let recCapTimer = 0;
 
-function pickRecMime() {
-  const candidates = [
-    "video/webm;codecs=vp9",
-    "video/webm;codecs=vp8",
-    "video/webm",
-    "video/mp4",
-  ];
-  for (const t of candidates) {
-    if (window.MediaRecorder && MediaRecorder.isTypeSupported(t)) return t;
-  }
-  return "";
-}
-
 function startRecording(stream) {
   if (!window.MediaRecorder) return; // 지원 안 하는 브라우저면 녹화 없이 게임만
   const mimeType = pickRecMime();
@@ -823,61 +810,8 @@ function onRecordingStop() {
   const blob = new Blob(recChunks, { type });
   recChunks = [];
   mediaRecorder = null;
-  if (blob.size > 0) saveRecording(blob);
-}
-
-function timestampName() {
-  const d = new Date();
-  const p = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}_${p(d.getHours())}-${p(
-    d.getMinutes()
-  )}-${p(d.getSeconds())}`;
-}
-
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 10_000);
-}
-
-async function saveRecording(blob) {
-  const filename = `${timestampName()}.${recExt}`;
-  const setStatus = (t) => ($("upload-status").textContent = t);
-
-  // Apps Script URL이 없으면 기기에 다운로드 (GitHub Pages에서 동작)
-  if (!APPS_SCRIPT_URL) {
-    downloadBlob(blob, filename);
-    setStatus(`💾 ${filename} 저장됨`);
-    return;
-  }
-
-  try {
-    setStatus("⬆️ 영상 업로드 중…");
-    const dataUrl = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-    const base64 = String(dataUrl).split(",")[1];
-
-    // Apps Script는 CORS 응답을 주지 않으므로 no-cors로 전송한다(응답은 못 읽음).
-    await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ filename, mimeType: blob.type, data: base64 }),
-    });
-    setStatus(`✅ ${filename} 드라이브로 전송함`);
-  } catch (err) {
-    console.error(err);
-    setStatus("⚠️ 업로드 실패 — 기기에 저장할게요");
-    downloadBlob(blob, filename);
+  if (blob.size > 0) {
+    saveRecording(blob, `${timestampName()}.${recExt}`, (t) => ($("upload-status").textContent = t));
   }
 }
 

@@ -7,7 +7,7 @@
  *  2) 배포 > 새 배포 > 웹 앱
  *       - 실행: 나(본인)
  *       - 액세스 권한: 모든 사용자
- *     배포하면 나오는 웹앱 URL(.../exec)을 pingpong.js 의 APPS_SCRIPT_URL 에 붙여넣으세요.
+ *     배포하면 나오는 웹앱 URL(.../exec)을 recording.js 의 APPS_SCRIPT_URL 에 붙여넣으세요.
  */
 
 const FOLDER_ID = "1Sp9sujSuk-OvTVYA7TSYMbJ-zhB6Gg1o";

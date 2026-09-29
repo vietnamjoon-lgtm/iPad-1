@@ -2,6 +2,7 @@ import {
   FilesetResolver,
   FaceLandmarker,
 } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+import { pickRecMime, timestampName, saveRecording } from "./recording.js";
 
 const WASM_URL = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
 const MODEL_URL =
@@ -27,6 +28,13 @@ const DROWSY_WINDOW_MS = 60_000; // 졸음 지수: 최근 1분 중 눈 감은 �
 const DROWSY_WARN = 0.2;
 const SOFT_WARN_COOLDOWN_MS = 120_000;
 const CALIB_MS = 3000;
+
+// 녹화: 공부하는 동안 계속 녹화해서 3분마다 파일 하나씩 드라이브로 보낸다.
+// (Apps Script 웹앱 URL은 recording.js 에 있어요)
+const REC = {
+  SEGMENT_MS: 3 * 60 * 1000, // 파일 하나 길이
+  BITRATE: 300_000, // 영상 비트레이트 (bps). 낮출수록 파일이 작아짐.
+};
 
 function saveSettings() {
   try {
@@ -392,6 +400,58 @@ function tick(now) {
   }
 }
 
+// ---------- 녹화 ----------
+// 3분마다 녹화기를 새로 시작해서, 파일 하나하나가 따로 재생되게 한다.
+// 쉬는 시간에는 녹화하지 않는다.
+
+let recStream = null;
+let recorder = null;
+let segmentTimer = 0;
+
+function startSegment() {
+  if (!recStream || recorder || !window.MediaRecorder) return;
+  const mimeType = pickRecMime();
+  const filename = `study_${timestampName()}.${mimeType.includes("mp4") ? "mp4" : "webm"}`;
+  let r;
+  try {
+    r = new MediaRecorder(
+      recStream,
+      mimeType ? { mimeType, videoBitsPerSecond: REC.BITRATE } : { videoBitsPerSecond: REC.BITRATE }
+    );
+  } catch (err) {
+    console.warn("녹화를 시작할 수 없어요:", err);
+    return;
+  }
+  const chunks = [];
+  r.ondataavailable = (e) => {
+    if (e.data && e.data.size > 0) chunks.push(e.data);
+  };
+  r.onstop = () => {
+    const blob = new Blob(chunks, { type: r.mimeType || "video/webm" });
+    if (blob.size > 0) saveRecording(blob, filename, () => {}); // 화면에는 표시하지 않음
+  };
+  r.start(1000);
+  recorder = r;
+  segmentTimer = setTimeout(() => {
+    stopSegment();
+    startSegment();
+  }, REC.SEGMENT_MS);
+}
+
+// 지금까지 녹화한 부분을 파일로 마무리해서 보낸다
+function stopSegment() {
+  clearTimeout(segmentTimer);
+  if (recorder && recorder.state !== "inactive") recorder.stop();
+  recorder = null;
+}
+
+// 다른 앱으로 가거나 탭을 닫으면 그때까지 녹화한 걸 먼저 보낸다
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") stopSegment();
+  else if (state.running && !state.paused) startSegment();
+});
+window.addEventListener("pagehide", stopSegment);
+
 // ---------- 자세 맞추기 ----------
 
 function startCalibration() {
@@ -420,6 +480,8 @@ $("pause").addEventListener("click", (e) => {
   e.currentTarget.classList.toggle("active", state.paused);
   if (state.paused && state.alarm) stopAlarm(performance.now());
   state.closedSamples = [];
+  if (state.paused) stopSegment();
+  else startSegment();
 });
 
 // ---------- 메인 루프 ----------
@@ -486,6 +548,8 @@ $("start").addEventListener("click", async () => {
     state.running = true;
     keepAwake();
     startCalibration();
+    recStream = video.srcObject;
+    startSegment();
   } catch (err) {
     console.error(err);
     $("start-error").textContent =
