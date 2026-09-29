@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Hand Ping Pong</title>
+  <link rel="stylesheet" href="pingpong.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <div id="scoreboard">
+    <div class="side"><span class="name">나</span><span id="score-player">0</span></div>
+    <div class="colon">:</div>
+    <div class="side"><span id="score-ai">0</span><span class="name">AI</span></div>
+  </div>
+  <div id="serve-info"></div>
+
+  <div id="message"></div>
+
+  <div id="power">
+    <div class="label">세기</div>
+    <div class="bar"><div id="power-fill"></div><div id="power-last"></div></div>
+    <div id="speed">- km/h</div>
+    <div id="rally"></div>
+  </div>
+
+  <div id="preview">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="preview-overlay"></canvas>
+  </div>
+
+  <div id="rec" hidden><span class="rec-dot"></span>REC</div>
+  <div id="upload-status"></div>
+
+  <div id="tracking-warning" hidden>팔이 안 보여요 💪 상체가 화면에 나오게 조금 뒤로 가 주세요</div>
+
+  <div id="overlay-screen">
+    <div class="card">
+      <h2 id="overlay-title">🏓 1인칭 탁구</h2>
+      <ul id="overlay-body"></ul>
+      <button id="start" type="button">탭하여 시작</button>
+      <p class="hint" id="hint">📹 플레이하는 동안 카메라 영상이 녹화돼요. 카메라 앞에 있는 사람에게 알려 주세요.</p>
+      <a class="link" href="index.html">← 손 3D 미러</a> · <a class="link" href="study.html">📚 공부 모드</a>
+    </div>
+  </div>
+
+  <script type="module" src="pingpong.js"></script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Study Guard</title>
+  <link rel="stylesheet" href="study.css" />
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>📚 Study Guard</h1>
+      <nav><a href="index.html">손 3D</a> · <a href="pingpong.html">탁구</a></nav>
+    </header>
+
+    <main>
+      <section class="card camera-card">
+        <div id="camera">
+          <video id="video" autoplay playsinline muted></video>
+          <canvas id="overlay"></canvas>
+          <div id="status" class="status idle">대기 중</div>
+          <div id="calib" hidden>
+            <b>평소 공부하는 자세로</b> 3초만 있어 주세요<br />
+            <span id="calib-count">3</span>
+          </div>
+        </div>
+
+        <div class="meters">
+          <div class="meter">
+            <div class="meter-label"><span>눈 감김</span><span id="eye-value">-</span></div>
+            <div class="meter-bar"><div id="eye-fill"></div><i id="eye-mark"></i></div>
+          </div>
+          <div class="meter">
+            <div class="meter-label"><span>고개 숙임</span><span id="head-value">-</span></div>
+            <div class="meter-bar"><div id="head-fill"></div><i id="head-mark"></i></div>
+          </div>
+          <div class="meter">
+            <div class="meter-label"><span>졸음 지수 (최근 1분)</span><span id="drowsy-value">-</span></div>
+            <div class="meter-bar"><div id="drowsy-fill"></div><i id="drowsy-mark"></i></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="side">
+        <div class="card timer-card">
+          <div class="timer-label">오늘 공부 시간</div>
+          <div id="timer">00:00:00</div>
+          <div class="timer-sub">집중률 <b id="focus-rate">-</b></div>
+          <div class="buttons">
+            <button id="pause" type="button" disabled>⏸ 쉬는 시간</button>
+            <button id="recalibrate" type="button" disabled>🎯 자세 다시 맞추기</button>
+          </div>
+        </div>
+
+        <div class="card stats">
+          <div><span id="stat-alarms">0</span><small>졸음 경고</small></div>
+          <div><span id="stat-blinks">0</span><small>긴 눈 감김</small></div>
+          <div><span id="stat-yawns">0</span><small>하품</small></div>
+        </div>
+
+        <div class="card">
+          <h3>경고 기록</h3>
+          <ul id="log"><li class="empty">아직 없어요 👍</li></ul>
+        </div>
+
+        <details class="card settings">
+          <summary>⚙️ 민감도 설정</summary>
+          <label>
+            <span>눈 감고 <b id="eyeSec-v"></b>초 지나면 알람</span>
+            <input type="range" id="eyeSec" min="1" max="5" step="0.5" />
+          </label>
+          <label>
+            <span>고개가 <b id="headDeg-v"></b>° 더 숙여지면 알람</span>
+            <input type="range" id="headDeg" min="10" max="50" step="5" />
+          </label>
+          <label>
+            <span>얼굴이 <b id="noFaceSec-v"></b>초 안 보이면 알람 (엎드림)</span>
+            <input type="range" id="noFaceSec" min="3" max="20" step="1" />
+          </label>
+          <label>
+            <span>알람 소리 크기 <b id="volume-v"></b></span>
+            <input type="range" id="volume" min="0.1" max="1" step="0.1" />
+          </label>
+          <button id="test-sound" type="button">🔊 소리 테스트</button>
+        </details>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" hidden></div>
+
+  <div id="alarm" hidden>
+    <div class="alarm-box">
+      <div class="alarm-emoji">⏰</div>
+      <div id="alarm-title">일어나세요!</div>
+      <div id="alarm-reason"></div>
+      <button id="alarm-stop" type="button">깼어요!</button>
+    </div>
+  </div>
+
+  <div id="start-screen">
+    <div class="start-box">
+      <h2>📚 Study Guard</h2>
+      <p>카메라로 얼굴을 보고 있다가, 졸거나 엎드리면 알람을 울려요.</p>
+      <ul>
+        <li>👁 눈을 오래 감고 있으면</li>
+        <li>🙇 고개가 푹 떨어지면</li>
+        <li>😴 엎드려서 얼굴이 안 보이면</li>
+        <li>🥱 최근 1분간 눈을 자주 감으면 미리 살짝 알려줘요</li>
+      </ul>
+      <p class="hint">아이패드를 얼굴이 잘 보이게 세워 두세요. 무음 모드면 소리가 안 날 수 있어요.<br />카메라 영상은 기기 안에서만 처리되고 저장되지 않아요.</p>
+      <button id="start" type="button">공부 시작</button>
+      <p id="start-error" class="error"></p>
+    </div>
+  </div>
+
+  <script type="module" src="study.js"></script>
+</body>
+</html>
