@@ -91,14 +91,18 @@
     .play::after { width: 176px; height: 176px; }
     .play svg { width: 34px; height: 34px; margin-left: 5px; }
 
-    /* 떠 있는 미리보기 카드 */
-    .float { position: absolute; border-radius: 18px; overflow: hidden; background: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: 0 20px 50px rgba(80, 70, 160, 0.24); }
-    .float img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .float.tr { top: 10%; right: -4%; width: 30%; aspect-ratio: 3 / 4; }
-    .float.tr img { object-position: left top; }
-    .float.bl { bottom: 12%; left: -4%; width: 34%; aspect-ratio: 4 / 3; }
-    .float.bl img { object-position: left center; }
+    /* 떠 있는 소개 카드 */
+    .float { position: absolute; border-radius: 20px; background: rgba(255, 255, 255, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: 0 20px 50px rgba(80, 70, 160, 0.22);
+      -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%);
+      display: flex; flex-direction: column; justify-content: center; gap: 12px; padding: 22px; }
+    .float .fi { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 15px; font-size: 28px; }
+    .float .ft { font-family: var(--display); font-weight: 700; font-size: 19px; letter-spacing: -0.01em; color: var(--ink); line-height: 1.25; }
+    .float .fs { font-size: 13.5px; color: var(--muted); line-height: 1.4; margin-top: -4px; }
+    .float.tr { top: 11%; right: -4%; width: 25%; }
+    .float.tr .fi { background: rgba(106, 92, 255, 0.14); }
+    .float.bl { bottom: 13%; left: -4%; width: 27%; }
+    .float.bl .fi { background: rgba(52, 199, 89, 0.16); }
 
     footer { text-align: center; color: var(--muted); font-size: 13px; padding: 0 22px 40px; }
 
@@ -139,8 +143,16 @@
       <img class="shot" src="design/study.png" alt="공부 모드 화면" />
     </div>
 
-    <div class="float tr"><img src="design/notes.png" alt="영어 단어 노트" /></div>
-    <div class="float bl"><img src="design/quiz.png" alt="단어 퀴즈" /></div>
+    <div class="float tr">
+      <span class="fi">📖</span>
+      <span class="ft">영어 단어장 정리</span>
+      <span class="fs">PDF만 넣으면 Day별로 자동 정리</span>
+    </div>
+    <div class="float bl">
+      <span class="fi">🎯</span>
+      <span class="ft">퀴즈도 가능!</span>
+      <span class="fs">틀린 단어는 다 맞출 때까지 반복</span>
+    </div>
   </section>
 
   <footer>카메라는 각 화면에서 시작 버튼을 눌러야 켜져요.</footer>
