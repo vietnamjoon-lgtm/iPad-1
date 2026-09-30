@@ -6,113 +6,189 @@
   <title>카메라 놀이터</title>
   <style>
     :root {
-      --bg: #0e1117;
-      --card: #171b24;
-      --line: #262c3a;
-      --text: #e9ecf3;
-      --muted: #8b93a7;
-      --accent: #7aa2ff;
+      --bg: #f5f5f7;
+      --bg-2: #ffffff;
+      --text: #1d1d1f;
+      --muted: #6e6e73;
+      --hairline: rgba(0, 0, 0, 0.08);
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 40px rgba(0, 0, 0, 0.08);
+      --shadow-hover: 0 2px 6px rgba(0, 0, 0, 0.06), 0 20px 60px rgba(0, 0, 0, 0.14);
+      --accent: #0071e3;
     }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #000000;
+        --bg-2: #1c1c1e;
+        --text: #f5f5f7;
+        --muted: #98989d;
+        --hairline: rgba(255, 255, 255, 0.1);
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 40px rgba(0, 0, 0, 0.5);
+        --shadow-hover: 0 2px 6px rgba(0, 0, 0, 0.5), 0 24px 70px rgba(0, 0, 0, 0.7);
+        --accent: #2997ff;
+      }
+    }
+
     * { box-sizing: border-box; }
-    html, body {
+    html { -webkit-text-size-adjust: 100%; }
+    body {
       margin: 0;
-      min-height: 100%;
+      min-height: 100dvh;
       background: var(--bg);
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
+
     .wrap {
-      max-width: 900px;
+      max-width: 980px;
       margin: 0 auto;
-      padding: calc(env(safe-area-inset-top, 0px) + 48px) 20px calc(env(safe-area-inset-bottom, 0px) + 48px);
+      padding: clamp(56px, 12vh, 128px) 22px 80px;
     }
+
     header {
       text-align: center;
-      margin-bottom: 40px;
+      margin-bottom: clamp(40px, 7vh, 72px);
+    }
+    .eyebrow {
+      margin: 0 0 14px;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      color: var(--accent);
     }
     h1 {
-      margin: 0 0 10px;
-      font-size: clamp(30px, 7vw, 46px);
+      margin: 0 0 18px;
+      font-size: clamp(40px, 9vw, 72px);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.05;
     }
-    header p {
-      margin: 0;
+    .lede {
+      margin: 0 auto;
+      max-width: 34ch;
+      font-size: clamp(18px, 3.5vw, 22px);
+      line-height: 1.45;
       color: var(--muted);
-      font-size: 16px;
-      line-height: 1.6;
     }
+
     .cards {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
     }
+
     .card {
+      position: relative;
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      padding: 26px 24px;
-      border-radius: 22px;
-      background: var(--card);
-      border: 1px solid var(--line);
+      min-height: 260px;
+      padding: 30px 28px;
+      border-radius: 28px;
+      background: var(--bg-2);
+      border: 1px solid var(--hairline);
+      box-shadow: var(--shadow);
       color: var(--text);
       text-decoration: none;
-      transition: transform 0.12s ease, border-color 0.12s ease;
+      overflow: hidden;
+      transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.35s ease;
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(120% 90% at 50% -10%, var(--glow), transparent 60%);
+      opacity: 0;
+      transition: opacity 0.35s ease;
+      pointer-events: none;
     }
     .card:hover,
     .card:focus-visible {
-      transform: translateY(-3px);
-      border-color: var(--accent);
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-hover);
       outline: none;
     }
-    .card .emoji {
-      font-size: 46px;
-      line-height: 1;
+    .card:hover::before,
+    .card:focus-visible::before { opacity: 1; }
+    .card:active { transform: translateY(-2px) scale(0.995); }
+
+    .card .icon {
+      display: grid;
+      place-items: center;
+      width: 68px;
+      height: 68px;
+      border-radius: 20px;
+      font-size: 38px;
+      background: var(--tint);
+      margin-bottom: auto;
     }
     .card .name {
-      font-size: 22px;
-      font-weight: 800;
+      margin-top: 26px;
+      font-size: 25px;
+      font-weight: 700;
+      letter-spacing: -0.015em;
     }
     .card .desc {
-      color: var(--muted);
-      font-size: 14px;
+      margin-top: 8px;
+      font-size: 15px;
       line-height: 1.5;
+      color: var(--muted);
     }
+    .card .go {
+      margin-top: 18px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .card .go::after {
+      content: " ›";
+    }
+
+    .hand  { --glow: rgba(0, 113, 227, 0.14);  --tint: rgba(0, 113, 227, 0.12); }
+    .ping  { --glow: rgba(255, 149, 0, 0.16);  --tint: rgba(255, 149, 0, 0.14); }
+    .study { --glow: rgba(52, 199, 89, 0.16);  --tint: rgba(52, 199, 89, 0.14); }
+
     footer {
-      margin-top: 36px;
+      margin-top: 48px;
       text-align: center;
       color: var(--muted);
       font-size: 13px;
-      line-height: 1.7;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .card { transition: none; }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
-      <h1>🎥 카메라 놀이터</h1>
-      <p>하고 싶은 걸 골라 주세요.</p>
+      <p class="eyebrow">카메라 놀이터</p>
+      <h1>무엇을 해볼까요?</h1>
+      <p class="lede">카메라로 몸을 인식하는 작은 앱들이에요. 하고 싶은 걸 골라 주세요.</p>
     </header>
 
     <main class="cards">
-      <a class="card" href="hand.html">
-        <span class="emoji">🖐</span>
+      <a class="card hand" href="hand.html">
+        <span class="icon">🖐</span>
         <span class="name">손 3D 미러</span>
         <span class="desc">3D 손 모델이 내 손을 실시간으로 따라 움직여요.</span>
+        <span class="go">열기</span>
       </a>
-      <a class="card" href="pingpong.html">
-        <span class="emoji">🏓</span>
+      <a class="card ping" href="pingpong.html">
+        <span class="icon">🏓</span>
         <span class="name">1인칭 탁구</span>
         <span class="desc">팔을 휘둘러서 AI와 탁구를 쳐요.</span>
+        <span class="go">열기</span>
       </a>
-      <a class="card" href="study.html">
-        <span class="emoji">📚</span>
+      <a class="card study" href="study.html">
+        <span class="icon">📚</span>
         <span class="name">공부 모드</span>
         <span class="desc">졸면 알람이 울리고, 단어장으로 퀴즈도 풀어요.</span>
+        <span class="go">열기</span>
       </a>
     </main>
 
-    <footer>
-      카메라는 각 화면에서 시작 버튼을 눌러야 켜져요.
-    </footer>
+    <footer>카메라는 각 화면에서 시작 버튼을 눌러야 켜져요.</footer>
   </div>
 </body>
 </html>
