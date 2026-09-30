@@ -18,7 +18,6 @@
       --muted: #6b6b76;
       --hairline: rgba(0, 0, 0, 0.1);
       --accent: #6a5cff;
-      --card: rgba(255, 255, 255, 0.72);
       --display: "Poppins", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
       --body: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
     }
@@ -35,212 +34,92 @@
     }
 
     /* 배경 그라데이션 블롭 */
-    .bg {
-      position: fixed;
-      inset: 0;
-      z-index: -1;
-      overflow: hidden;
-      background: linear-gradient(180deg, #eef1fb 0%, #f6f2fb 45%, #fbf4f8 100%);
-    }
-    .bg span {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(70px);
-      opacity: 0.6;
-    }
-    .bg .b1 { width: 46vw; height: 46vw; left: -8vw;  top: 2vw;  background: #b7c6ff; }
-    .bg .b2 { width: 42vw; height: 42vw; right: -6vw; top: 6vw;  background: #f2b8e6; }
-    .bg .b3 { width: 40vw; height: 40vw; left: 30vw;  top: 34vw; background: #c9b3ff; opacity: 0.5; }
+    .bg { position: fixed; inset: 0; z-index: -1; overflow: hidden;
+      background: linear-gradient(180deg, #eef1fb 0%, #f6f2fb 45%, #fbf4f8 100%); }
+    .bg span { position: absolute; border-radius: 50%; filter: blur(70px); opacity: 0.6; }
+    .bg .b1 { width: 46vw; height: 46vw; left: -8vw; top: 2vw; background: #b7c6ff; }
+    .bg .b2 { width: 42vw; height: 42vw; right: -6vw; top: 6vw; background: #f2b8e6; }
+    .bg .b3 { width: 40vw; height: 40vw; left: 30vw; top: 40vw; background: #c9b3ff; opacity: 0.5; }
 
     /* 내비 */
     nav {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      max-width: 1120px;
-      margin: 0 auto;
+      display: flex; align-items: center; gap: 20px;
+      max-width: 1120px; margin: 0 auto;
       padding: 20px max(22px, env(safe-area-inset-right)) 0 max(22px, env(safe-area-inset-left));
     }
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-family: var(--display);
-      font-weight: 800;
-      font-size: 19px;
-      color: var(--ink);
-      text-decoration: none;
-      letter-spacing: -0.01em;
-    }
-    .brand .mark {
-      display: grid;
-      place-items: center;
-      width: 34px;
-      height: 34px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #6a5cff, #b96bff);
-      color: #fff;
-      font-size: 18px;
-    }
-    .nav-links {
-      display: flex;
-      gap: 26px;
-      margin: 0 auto;
-    }
-    .nav-links a {
-      font-family: var(--display);
-      font-weight: 500;
-      font-size: 15px;
-      color: var(--text);
-      text-decoration: none;
-      opacity: 0.85;
-    }
+    .brand { display: flex; align-items: center; gap: 10px; font-family: var(--display);
+      font-weight: 800; font-size: 19px; color: var(--ink); text-decoration: none; letter-spacing: -0.01em; }
+    .brand .mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px;
+      background: linear-gradient(135deg, #6a5cff, #b96bff); color: #fff; font-size: 18px; }
+    .nav-links { display: flex; gap: 26px; margin: 0 auto; }
+    .nav-links a { font-family: var(--display); font-weight: 500; font-size: 15px; color: var(--text); text-decoration: none; opacity: 0.85; }
     .nav-links a:hover { opacity: 1; }
-    .pill-dark {
-      font-family: var(--display);
-      font-weight: 600;
-      font-size: 15px;
-      color: #fff;
-      background: var(--ink);
-      border: none;
-      border-radius: 999px;
-      padding: 11px 22px;
-      text-decoration: none;
-      white-space: nowrap;
-      transition: transform 0.1s ease, opacity 0.2s ease;
-    }
+    .pill-dark { font-family: var(--display); font-weight: 600; font-size: 15px; color: #fff; background: var(--ink);
+      border: none; border-radius: 999px; padding: 11px 22px; text-decoration: none; white-space: nowrap; transition: transform 0.1s ease; }
     .pill-dark:active { transform: scale(0.97); }
 
     /* 히어로 */
-    .hero {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: clamp(48px, 9vh, 96px) 22px 0;
-      text-align: center;
-    }
-    .hero h1 {
-      font-family: var(--display);
-      font-weight: 800;
-      font-size: clamp(2.6rem, 8vw, 4.6rem);
-      line-height: 1.04;
-      letter-spacing: -0.03em;
-      color: var(--ink);
-      margin: 0 0 22px;
-    }
-    .hero .lede {
-      max-width: 30ch;
-      margin: 0 auto 30px;
-      font-size: clamp(1.05rem, 2.6vw, 1.3rem);
-      line-height: 1.5;
-      color: var(--muted);
-    }
-    .cta {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 14px;
-    }
-    .btn {
-      font-family: var(--display);
-      font-weight: 600;
-      font-size: 16px;
-      border-radius: 999px;
-      padding: 15px 28px;
-      text-decoration: none;
-      cursor: pointer;
-      transition: transform 0.1s ease, background 0.2s ease;
-    }
+    .hero { max-width: 900px; margin: 0 auto; padding: clamp(40px, 7vh, 84px) 22px 0; text-align: center; }
+    .hero h1 { font-family: var(--display); font-weight: 800; font-size: clamp(2.5rem, 7.5vw, 4.4rem);
+      line-height: 1.05; letter-spacing: -0.03em; color: var(--ink); margin: 0 0 20px; }
+    .hero .lede { max-width: 30ch; margin: 0 auto 28px; font-size: clamp(1.05rem, 2.6vw, 1.28rem); line-height: 1.5; color: var(--muted); }
+    .cta { display: flex; justify-content: center; flex-wrap: wrap; gap: 14px; }
+    .btn { font-family: var(--display); font-weight: 600; font-size: 16px; border-radius: 999px; padding: 15px 28px; text-decoration: none; cursor: pointer; transition: transform 0.1s ease; }
     .btn-dark { background: var(--ink); color: #fff; border: none; }
     .btn-dark:active { transform: scale(0.97); }
-    .btn-ghost {
-      background: rgba(255, 255, 255, 0.6);
-      color: var(--ink);
-      border: 1px solid var(--hairline);
-      -webkit-backdrop-filter: blur(10px);
-      backdrop-filter: blur(10px);
-    }
+    .btn-ghost { background: rgba(255, 255, 255, 0.6); color: var(--ink); border: 1px solid var(--hairline);
+      -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
     .btn-ghost:active { transform: scale(0.97); }
 
-    /* 앱 카드 */
-    .apps {
-      max-width: 1000px;
-      margin: 0 auto;
-      padding: clamp(48px, 8vh, 88px) 22px 90px;
-      position: relative;
+    /* 가운데 목업 (여기에 사진/영상 넣기) */
+    .stage { position: relative; max-width: 900px; margin: clamp(40px, 7vh, 80px) auto 0; padding: 0 22px 100px; }
+    .device {
+      position: relative; border-radius: 26px; overflow: hidden;
+      aspect-ratio: 16 / 10;
+      background:
+        linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px) 0 0 / 100% 9%,
+        linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px) 0 0 / 8% 100%,
+        #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05), 0 40px 90px rgba(80, 70, 160, 0.22);
     }
-    .apps-note {
-      position: absolute;
-      top: clamp(24px, 5vh, 52px);
-      right: 6%;
-      font-family: "Caveat", cursive;
-      font-weight: 700;
-      font-size: 26px;
-      color: var(--accent);
-      transform: rotate(-6deg);
-    }
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 20px;
-    }
-    .card {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      min-height: 250px;
-      padding: 28px 26px;
-      border-radius: 26px;
-      background: var(--card);
-      border: 1px solid rgba(255, 255, 255, 0.7);
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 22px 50px rgba(80, 70, 160, 0.12);
-      -webkit-backdrop-filter: blur(20px) saturate(160%);
-      backdrop-filter: blur(20px) saturate(160%);
-      color: var(--text);
-      text-decoration: none;
-      transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.35s ease;
-    }
-    .card:hover, .card:focus-visible {
-      transform: translateY(-6px);
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06), 0 30px 70px rgba(80, 70, 160, 0.2);
-      outline: none;
-    }
-    .card:active { transform: translateY(-2px) scale(0.995); }
-    .card .icon {
-      display: grid;
-      place-items: center;
-      width: 62px;
-      height: 62px;
-      border-radius: 18px;
-      font-size: 34px;
-      background: var(--tint);
-      margin-bottom: auto;
-    }
-    .card .name {
-      margin-top: 24px;
-      font-family: var(--display);
-      font-weight: 700;
-      font-size: 23px;
-      letter-spacing: -0.01em;
-      color: var(--ink);
-    }
-    .card .desc { margin-top: 8px; font-size: 14.5px; line-height: 1.5; color: var(--muted); }
-    .card .go { margin-top: 16px; font-family: var(--display); font-weight: 600; font-size: 14.5px; color: var(--accent); }
-    .card .go::after { content: " ›"; }
+    .device .dot { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 7px; height: 7px; border-radius: 50%; background: rgba(0,0,0,0.15); }
+    /* 사진을 넣으면 이 img의 src만 채우면 돼요 (자리는 그대로) */
+    .device .shot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .device .placeholder { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 14px; text-align: center; }
+    .play { position: relative; display: grid; place-items: center; width: 92px; height: 92px; border-radius: 50%;
+      background: linear-gradient(135deg, #7d8bff, #4aa8ff); color: #fff; box-shadow: 0 12px 30px rgba(74, 130, 255, 0.45); }
+    .play::before, .play::after { content: ""; position: absolute; border: 1.5px solid rgba(74, 130, 255, 0.35); border-radius: 50%; }
+    .play::before { width: 132px; height: 132px; }
+    .play::after { width: 176px; height: 176px; }
+    .play svg { width: 34px; height: 34px; margin-left: 5px; }
+    .ph-text { font-family: var(--display); font-weight: 600; font-size: 15px; color: var(--muted); }
 
-    .hand  { --tint: rgba(106, 92, 255, 0.14); }
-    .ping  { --tint: rgba(255, 149, 0, 0.16); }
-    .study { --tint: rgba(52, 199, 89, 0.16); }
+    /* 떠 있는 카드 */
+    .float { position: absolute; border-radius: 20px; background: rgba(255, 255, 255, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: 0 20px 50px rgba(80, 70, 160, 0.2);
+      -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%); }
+    .float.tr { top: 12%; right: -3%; width: 26%; aspect-ratio: 3 / 4; }
+    .float.bl { bottom: 14%; left: -3%; width: 30%; aspect-ratio: 4 / 3; }
+
+    /* 손글씨 주석 */
+    .note { position: absolute; font-family: "Caveat", cursive; font-weight: 700; font-size: 26px; color: var(--ink); line-height: 1.1; }
+    .note svg { position: absolute; width: 56px; height: 44px; stroke: var(--ink); fill: none; stroke-width: 2; stroke-linecap: round; }
+    .note.n1 { top: 4%; right: 4%; text-align: right; }
+    .note.n1 svg { top: 100%; right: 8px; transform: rotate(6deg); }
+    .note.n2 { top: 30%; left: 1%; }
+    .note.n2 svg { top: 100%; left: 10px; transform: scaleX(-1) rotate(6deg); }
 
     footer { text-align: center; color: var(--muted); font-size: 13px; padding: 0 22px 40px; }
 
-    @media (max-width: 680px) {
+    @media (max-width: 720px) {
       .nav-links { display: none; }
-      .apps-note { right: 4%; font-size: 22px; }
+      .float, .note { display: none; }
+      .play { width: 74px; height: 74px; }
+      .play::before { width: 108px; height: 108px; }
+      .play::after { width: 144px; height: 144px; }
     }
-    @media (prefers-reduced-motion: reduce) {
-      html { scroll-behavior: auto; }
-      .card { transition: none; }
-    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
   </style>
 </head>
 <body>
@@ -260,34 +139,36 @@
     <h1>카메라만 있으면<br />놀 준비 끝</h1>
     <p class="lede">손동작 미러, 팔 휘두르는 탁구, 졸음 막는 공부 모드까지. 설치 없이 브라우저에서 바로.</p>
     <div class="cta">
-      <a class="btn btn-dark" href="#apps">지금 해보기</a>
-      <a class="btn btn-ghost" href="hand.html">손 3D부터 열기</a>
+      <a class="btn btn-dark" href="hand.html">지금 해보기</a>
+      <a class="btn btn-ghost" href="pingpong.html">탁구 치러 가기</a>
     </div>
   </header>
 
-  <main class="apps" id="apps">
-    <span class="apps-note">골라서 눌러요!</span>
-    <div class="cards">
-      <a class="card hand" href="hand.html">
-        <span class="icon">🖐</span>
-        <span class="name">손 3D 미러</span>
-        <span class="desc">3D 손 모델이 내 손을 실시간으로 따라 움직여요.</span>
-        <span class="go">열기</span>
-      </a>
-      <a class="card ping" href="pingpong.html">
-        <span class="icon">🏓</span>
-        <span class="name">1인칭 탁구</span>
-        <span class="desc">팔을 휘둘러서 AI와 탁구를 쳐요.</span>
-        <span class="go">열기</span>
-      </a>
-      <a class="card study" href="study.html">
-        <span class="icon">📚</span>
-        <span class="name">공부 모드</span>
-        <span class="desc">졸면 알람이 울리고, 단어장으로 퀴즈도 풀어요.</span>
-        <span class="go">열기</span>
-      </a>
+  <section class="stage">
+    <div class="device">
+      <span class="dot"></span>
+
+      <!-- 사진/영상을 넣으려면 아래 img 의 src 를 채우세요. 예: <img class="shot" src="design/hero.png" alt="" /> -->
+      <!-- <img class="shot" src="" alt="" /> -->
+
+      <div class="placeholder">
+        <div class="play">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+        <div class="ph-text">여기에 사진 · 영상이 들어가요</div>
+      </div>
     </div>
-  </main>
+
+    <div class="float tr"></div>
+    <div class="float bl"></div>
+
+    <div class="note n1">멋진 기능
+      <svg viewBox="0 0 56 44"><path d="M4 4 C 30 6, 44 18, 50 38"/><path d="M50 38 l -12 -3 M50 38 l 3 -12"/></svg>
+    </div>
+    <div class="note n2">직접 해봐요!
+      <svg viewBox="0 0 56 44"><path d="M4 4 C 30 6, 44 18, 50 38"/><path d="M50 38 l -12 -3 M50 38 l 3 -12"/></svg>
+    </div>
+  </section>
 
   <footer>카메라는 각 화면에서 시작 버튼을 눌러야 켜져요.</footer>
 </body>
