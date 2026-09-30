@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Hand Mirror 3D</title>
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <div id="preview">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="overlay"></canvas>
+  </div>
+
+  <header id="hud">
+    <h1>Hand Mirror 3D</h1>
+    <div id="status">시작 버튼을 눌러 주세요</div>
+    <div id="legend">
+      <span><i class="dot left"></i>왼손</span>
+      <span><i class="dot right"></i>오른손</span>
+      <span id="fps"></span>
+    </div>
+  </header>
+
+  <div id="controls">
+    <button id="togglePreview" type="button">카메라 화면 숨기기</button>
+    <button id="resetView" type="button">시점 초기화</button>
+    <a class="button" href="index.html">🏠 홈</a>
+    <a class="button" href="pingpong.html">🏓 탁구 게임</a>
+    <a class="button" href="study.html">📚 공부 모드</a>
+  </div>
+
+  <div id="start-screen">
+    <div class="card">
+      <h2>손을 3D로 따라하기</h2>
+      <p>카메라로 손을 인식해서 3D 손 모델이 실시간으로 똑같이 움직여요.</p>
+      <button id="start" type="button">카메라 켜고 시작</button>
+      <p class="hint">카메라 사용 권한을 허용해 주세요.</p>
+    </div>
+  </div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>

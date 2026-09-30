@@ -3,51 +3,116 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Hand Mirror 3D</title>
-  <link rel="stylesheet" href="style.css" />
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-      }
+  <title>카메라 놀이터</title>
+  <style>
+    :root {
+      --bg: #0e1117;
+      --card: #171b24;
+      --line: #262c3a;
+      --text: #e9ecf3;
+      --muted: #8b93a7;
+      --accent: #7aa2ff;
     }
-  </script>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    }
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: calc(env(safe-area-inset-top, 0px) + 48px) 20px calc(env(safe-area-inset-bottom, 0px) + 48px);
+    }
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(30px, 7vw, 46px);
+    }
+    header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+    }
+    .card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 26px 24px;
+      border-radius: 22px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      color: var(--text);
+      text-decoration: none;
+      transition: transform 0.12s ease, border-color 0.12s ease;
+    }
+    .card:hover,
+    .card:focus-visible {
+      transform: translateY(-3px);
+      border-color: var(--accent);
+      outline: none;
+    }
+    .card .emoji {
+      font-size: 46px;
+      line-height: 1;
+    }
+    .card .name {
+      font-size: 22px;
+      font-weight: 800;
+    }
+    .card .desc {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    footer {
+      margin-top: 36px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+  </style>
 </head>
 <body>
-  <canvas id="scene"></canvas>
+  <div class="wrap">
+    <header>
+      <h1>🎥 카메라 놀이터</h1>
+      <p>하고 싶은 걸 골라 주세요.</p>
+    </header>
 
-  <div id="preview">
-    <video id="video" autoplay playsinline muted></video>
-    <canvas id="overlay"></canvas>
+    <main class="cards">
+      <a class="card" href="hand.html">
+        <span class="emoji">🖐</span>
+        <span class="name">손 3D 미러</span>
+        <span class="desc">3D 손 모델이 내 손을 실시간으로 따라 움직여요.</span>
+      </a>
+      <a class="card" href="pingpong.html">
+        <span class="emoji">🏓</span>
+        <span class="name">1인칭 탁구</span>
+        <span class="desc">팔을 휘둘러서 AI와 탁구를 쳐요.</span>
+      </a>
+      <a class="card" href="study.html">
+        <span class="emoji">📚</span>
+        <span class="name">공부 모드</span>
+        <span class="desc">졸면 알람이 울리고, 단어장으로 퀴즈도 풀어요.</span>
+      </a>
+    </main>
+
+    <footer>
+      카메라는 각 화면에서 시작 버튼을 눌러야 켜져요.
+    </footer>
   </div>
-
-  <header id="hud">
-    <h1>Hand Mirror 3D</h1>
-    <div id="status">시작 버튼을 눌러 주세요</div>
-    <div id="legend">
-      <span><i class="dot left"></i>왼손</span>
-      <span><i class="dot right"></i>오른손</span>
-      <span id="fps"></span>
-    </div>
-  </header>
-
-  <div id="controls">
-    <button id="togglePreview" type="button">카메라 화면 숨기기</button>
-    <button id="resetView" type="button">시점 초기화</button>
-    <a class="button" href="pingpong.html">🏓 탁구 게임</a>
-    <a class="button" href="study.html">📚 공부 모드</a>
-  </div>
-
-  <div id="start-screen">
-    <div class="card">
-      <h2>손을 3D로 따라하기</h2>
-      <p>카메라로 손을 인식해서 3D 손 모델이 실시간으로 똑같이 움직여요.</p>
-      <button id="start" type="button">카메라 켜고 시작</button>
-      <p class="hint">카메라 사용 권한을 허용해 주세요.</p>
-    </div>
-  </div>
-
-  <script type="module" src="main.js"></script>
 </body>
 </html>

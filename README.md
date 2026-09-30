@@ -4,7 +4,8 @@
 
 | 페이지 | 설명 |
 |---|---|
-| `index.html` | 🖐 손 3D 미러: 3D 손 모델이 내 손을 실시간으로 따라 움직여요 |
+| `index.html` | 🏠 홈: 아래 3개를 고르는 메인 화면 |
+| `hand.html` | 🖐 손 3D 미러: 3D 손 모델이 내 손을 실시간으로 따라 움직여요 |
 | `pingpong.html` | 🏓 1인칭 탁구: 팔을 휘둘러서 AI와 탁구를 쳐요 (MediaPipe Pose) |
 | `study.html` | 📚 Study Guard: 졸거나 엎드리면 알람이 울려요 (MediaPipe Face Landmarker). 📖 단어장 PDF에서 Day별 단어·뜻 모으기 + 퀴즈 (Gemini) |
 
