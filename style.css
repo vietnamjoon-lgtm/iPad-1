@@ -1,9 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Caveat:wght@600;700&display=swap');
+
 :root {
-  --accent: #0071e3;
+  --accent: #6a5cff;
   --text: #1d1d1f;
   --muted: #6e6e73;
   --card: #ffffff;
   --hairline: rgba(0, 0, 0, 0.1);
+  --display: "Poppins", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
 }
 
 * {
@@ -15,7 +18,7 @@ body {
   margin: 0;
   height: 100%;
   overflow: hidden;
-  background: radial-gradient(circle at 50% 25%, #ffffff, #e8e9ed 75%);
+  background: linear-gradient(180deg, #eef1fb 0%, #f6f2fb 45%, #fbf4f8 100%);
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -41,6 +44,7 @@ body {
 
 #hud h1 {
   margin: 0 0 4px;
+  font-family: var(--display);
   font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -158,6 +162,7 @@ a.button:active {
 
 .card h2 {
   margin: 0 0 10px;
+  font-family: var(--display);
   font-size: 27px;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -171,15 +176,16 @@ a.button:active {
 #start {
   margin: 18px 0 6px;
   padding: 15px 30px;
+  font-family: var(--display);
   font-size: 17px;
   font-weight: 600;
   color: #fff;
-  background: var(--accent);
+  background: #0b0b12;
   border: none;
 }
 
 #start:active {
-  background: #0067cf;
+  background: #000;
 }
 
 .hint {

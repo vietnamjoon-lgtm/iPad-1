@@ -56,8 +56,8 @@ const renderer = new THREE.WebGLRenderer({ canvas: $("scene"), antialias: true }
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xeef0f3);
-scene.fog = new THREE.Fog(0xeef0f3, 6, 16);
+scene.background = new THREE.Color(0xf3f1fb);
+scene.fog = new THREE.Fog(0xf3f1fb, 6, 16);
 
 const camera = new THREE.PerspectiveCamera(55, 1, 0.05, 50);
 const CAMERA_BASE = new THREE.Vector3(0, 1.45, 2.4);
