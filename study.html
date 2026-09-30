@@ -90,20 +90,31 @@
     <section class="card vocab">
       <h3>📖 단어 모으기</h3>
       <div class="vocab-controls">
+        <button id="vocab-quiz" type="button" hidden>🎯 퀴즈 시작</button>
         <label class="file-button">
-          📄 PDF 선택
-          <input type="file" id="vocab-file" accept="application/pdf,.pdf" />
+          📂 단어 파일 불러오기
+          <input type="file" id="vocab-import" accept="application/json,.json" />
         </label>
-        <span id="vocab-file-name">선택한 파일 없음</span>
+        <button id="vocab-save" type="button" hidden>💾 단어 파일로 저장</button>
       </div>
-      <div class="vocab-controls">
-        <select id="vocab-from" aria-label="시작 Day"></select>
-        <span>~</span>
-        <select id="vocab-to" aria-label="끝 Day"></select>
-        <button id="vocab-run" type="button" disabled>단어 뽑기</button>
-        <button id="vocab-copy-all" type="button" hidden>📋 전체 복사</button>
-        <button id="vocab-quiz" type="button" hidden>🎯 퀴즈</button>
-      </div>
+
+      <details class="vocab-extract">
+        <summary>➕ PDF에서 새로 뽑기</summary>
+        <div class="vocab-controls">
+          <label class="file-button">
+            📄 PDF 선택
+            <input type="file" id="vocab-file" accept="application/pdf,.pdf" />
+          </label>
+          <span id="vocab-file-name">선택한 파일 없음</span>
+        </div>
+        <div class="vocab-controls">
+          <select id="vocab-from" aria-label="시작 Day"></select>
+          <span>~</span>
+          <select id="vocab-to" aria-label="끝 Day"></select>
+          <button id="vocab-run" type="button" disabled>단어 뽑기</button>
+          <button id="vocab-copy-all" type="button" hidden>📋 전체 복사</button>
+        </div>
+      </details>
       <p id="vocab-status">PDF는 이 기기 안에서만 열려요. 고른 Day 쪽 이미지만 Gemini로 보내요.</p>
       <div id="vocab-results"></div>
     </section>

@@ -364,6 +364,24 @@ button.active {
   padding: 9px 10px;
 }
 
+.vocab-extract {
+  margin: 6px 0 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.vocab-extract summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.vocab-extract[open] summary {
+  margin-bottom: 12px;
+}
+
 #vocab-status {
   margin: 4px 0 12px;
   color: var(--muted);

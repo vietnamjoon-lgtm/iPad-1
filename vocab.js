@@ -49,6 +49,71 @@ const results = new Map();
 let pdfDoc = null;
 let running = false;
 
+// ---------- 저장 / 불러오기 ----------
+// 한 번 뽑은 단어를 브라우저에 저장해서 새로고침·다음에 와도 그대로 쓴다.
+// 파일(.json)로 내보내고 불러올 수도 있어서 PDF·Gemini 없이 바로 쓸 수 있다.
+
+const STORE_KEY = "vocab-words";
+
+function doneDaysObject() {
+  const days = {};
+  for (const [d, r] of results) {
+    if (r.status === "done") days[d] = { pages: r.pages, words: r.words };
+  }
+  return days;
+}
+
+function saveResults() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify({ v: 1, days: doneDaysObject() }));
+  } catch {}
+}
+
+// days: { "1": {pages:[a,b], words:[...]} } 또는 { "1": [words...] }
+function importDays(days) {
+  let added = 0;
+  for (const [k, v] of Object.entries(days || {})) {
+    const day = Number(k);
+    if (!Number.isInteger(day) || day < 1) continue;
+    const raw = Array.isArray(v) ? v : v?.words;
+    if (!Array.isArray(raw)) continue;
+    const words = raw
+      .map((w) => ({ word: String(w.word || "").trim(), meaning: String(w.meaning || "").trim() }))
+      .filter((w) => w.word);
+    if (words.length === 0) continue;
+    const pages = (!Array.isArray(v) && Array.isArray(v?.pages) && v.pages) || (day <= DAYS ? dayPages(day) : [0, 0]);
+    results.set(day, { pages, status: "done", words });
+    added++;
+  }
+  render();
+  return added;
+}
+
+function loadStoredResults() {
+  let data = null;
+  try {
+    data = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+  } catch {}
+  if (data && data.days) importDays(data.days);
+}
+
+function exportWords() {
+  const days = doneDaysObject();
+  if (Object.keys(days).length === 0) {
+    setStatus("저장할 단어가 없어요. 먼저 단어를 뽑거나 불러오세요.");
+    return;
+  }
+  const blob = new Blob([JSON.stringify({ v: 1, days }, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "단어.json";
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
 function setStatus(text) {
   $("vocab-status").textContent = text;
 }
@@ -137,6 +202,7 @@ function render() {
   const hasDone = days.some((d) => results.get(d).status === "done");
   $("vocab-copy-all").hidden = !hasDone;
   $("vocab-quiz").hidden = !hasDone;
+  $("vocab-save").hidden = !hasDone;
 }
 
 $("vocab-copy-all").addEventListener("click", (e) => {
@@ -540,12 +606,13 @@ async function run(days) {
       failed++;
     }
     render();
+    saveResults(); // 뽑은 Day는 바로 저장 (중간에 끊겨도 남게)
   }
 
   running = false;
   updateRunButton();
   render();
-  setStatus(failed ? `끝났어요. ${failed}개 Day는 실패했어요 (🔁 다시 버튼으로 재시도).` : "✅ 다 모았어요!");
+  setStatus(failed ? `끝났어요. ${failed}개 Day는 실패했어요 (🔁 다시 버튼으로 재시도).` : "✅ 다 모았어요! 저장돼서 다음에 또 쓸 수 있어요.");
 }
 
 $("vocab-run").addEventListener("click", () => {
@@ -556,3 +623,31 @@ $("vocab-run").addEventListener("click", () => {
   for (let d = from; d <= to; d++) days.push(d);
   run(days);
 });
+
+// ---------- 저장/불러오기 버튼 ----------
+
+$("vocab-save").addEventListener("click", exportWords);
+
+$("vocab-import").addEventListener("change", async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    const added = importDays(data.days || data);
+    if (added > 0) {
+      saveResults();
+      setStatus(`✅ 단어 파일을 불러왔어요 (Day ${added}개). 이제 🎯 퀴즈로 바로 풀 수 있어요.`);
+    } else {
+      setStatus("⚠️ 파일에서 단어를 찾지 못했어요.");
+    }
+  } catch (err) {
+    setStatus(`⚠️ 단어 파일을 읽을 수 없어요: ${err.message || err}`);
+  }
+  e.target.value = "";
+});
+
+// 저장해 둔 단어 불러오기 (있으면 바로 퀴즈 가능)
+loadStoredResults();
+if (doneDays().length > 0) {
+  setStatus(`저장된 단어가 있어요 (Day ${doneDays().length}개). 🎯 퀴즈로 바로 풀 수 있어요.`);
+}
