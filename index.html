@@ -104,6 +104,29 @@
     .float.bl { bottom: 13%; left: -4%; width: 27%; }
     .float.bl .fi { background: rgba(52, 199, 89, 0.16); }
 
+    /* 선택 화면 (지금 해보기) */
+    .chooser { position: fixed; inset: 0; z-index: 100; display: none; place-items: center; padding: 22px;
+      background: rgba(243, 241, 251, 0.7); -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%); }
+    .chooser.open { display: grid; }
+    .chooser-panel { width: 100%; max-width: 860px; text-align: center; }
+    .chooser-panel h2 { font-family: var(--display); font-weight: 800; font-size: clamp(1.8rem, 5vw, 2.6rem);
+      letter-spacing: -0.02em; color: var(--ink); margin: 0 0 26px; }
+    .choose-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+    .choose-card { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px;
+      padding: 30px 22px; border-radius: 24px; background: #fff; border: 1px solid var(--hairline);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 18px 44px rgba(80,70,160,0.14); color: var(--text); text-decoration: none;
+      transition: transform 0.3s cubic-bezier(0.2,0.7,0.2,1), box-shadow 0.3s ease; }
+    .choose-card:hover, .choose-card:focus-visible { transform: translateY(-6px); box-shadow: 0 2px 6px rgba(0,0,0,0.06), 0 26px 60px rgba(80,70,160,0.22); outline: none; }
+    .choose-card:active { transform: translateY(-2px) scale(0.99); }
+    .choose-card .ci { display: grid; place-items: center; width: 66px; height: 66px; border-radius: 20px; font-size: 36px; background: var(--tint); }
+    .choose-card .cn { font-family: var(--display); font-weight: 700; font-size: 20px; letter-spacing: -0.01em; color: var(--ink); }
+    .choose-card .cd { font-size: 14px; line-height: 1.45; color: var(--muted); }
+    .choose-card.hand  { --tint: rgba(106, 92, 255, 0.14); }
+    .choose-card.ping  { --tint: rgba(255, 149, 0, 0.16); }
+    .choose-card.study { --tint: rgba(52, 199, 89, 0.16); }
+    .chooser-close { margin-top: 24px; font-family: var(--display); font-weight: 600; font-size: 15px; color: var(--muted);
+      background: none; border: none; cursor: pointer; }
+
     footer { text-align: center; color: var(--muted); font-size: 13px; padding: 0 22px 40px; }
 
     @media (max-width: 720px) {
@@ -133,8 +156,7 @@
     <h1>카메라만 있으면<br />놀 준비 끝</h1>
     <p class="lede">손동작 미러, 팔 휘두르는 탁구, 졸음 막는 공부 모드까지. 설치 없이 브라우저에서 바로.</p>
     <div class="cta">
-      <a class="btn btn-dark" href="hand.html">지금 해보기</a>
-      <a class="btn btn-ghost" href="pingpong.html">탁구 치러 가기</a>
+      <button class="btn btn-dark" id="open-chooser" type="button">지금 해보기</button>
     </div>
   </header>
 
@@ -156,5 +178,43 @@
   </section>
 
   <footer>카메라는 각 화면에서 시작 버튼을 눌러야 켜져요.</footer>
+
+  <div class="chooser" id="chooser" role="dialog" aria-modal="true" aria-label="무엇을 해볼까요?">
+    <div class="chooser-panel">
+      <h2>무엇을 해볼까요?</h2>
+      <div class="choose-grid">
+        <a class="choose-card hand" href="hand.html">
+          <span class="ci">🖐</span>
+          <span class="cn">손 3D 미러</span>
+          <span class="cd">3D 손이 내 손을 따라 움직여요</span>
+        </a>
+        <a class="choose-card ping" href="pingpong.html">
+          <span class="ci">🏓</span>
+          <span class="cn">1인칭 탁구</span>
+          <span class="cd">팔을 휘둘러 AI와 탁구를 쳐요</span>
+        </a>
+        <a class="choose-card study" href="study.html">
+          <span class="ci">📚</span>
+          <span class="cn">공부 모드</span>
+          <span class="cd">졸면 알람, 단어장·퀴즈까지</span>
+        </a>
+      </div>
+      <button class="chooser-close" id="close-chooser" type="button">닫기</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var chooser = document.getElementById("chooser");
+      var open = document.getElementById("open-chooser");
+      var close = document.getElementById("close-chooser");
+      function show() { chooser.classList.add("open"); }
+      function hide() { chooser.classList.remove("open"); }
+      open.addEventListener("click", show);
+      close.addEventListener("click", hide);
+      chooser.addEventListener("click", function (e) { if (e.target === chooser) hide(); });
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape") hide(); });
+    })();
+  </script>
 </body>
 </html>
