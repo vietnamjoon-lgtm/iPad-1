@@ -36,15 +36,15 @@ const GRAVITY = 9.81;
 const DRAG = 0.08;
 const TABLE_BOUNCE = 0.88;
 
-const PLAYER_HIT_HEIGHT = 0.15; // 공과 라켓 높이 차이가 이 안이면 맞음
+const PLAYER_HIT_HEIGHT = 0.34; // 공과 라켓 높이 차이가 이 안이면 맞음 (넉넉하게)
 const AI_Z = -HALF_L - 0.25;
-const AI_SPEED = 1.8; // AI 라켓 좌우 이동 속도 (m/s)
-const AI_REACH = 0.22;
+const AI_SPEED = 1.3; // AI 라켓 좌우 이동 속도 (m/s)
+const AI_REACH = 0.18;
 
 const WIN_SCORE = 11;
 const SWING_WINDOW_MS = 120;
-const SWING_MEMORY_MS = 250;
-const MIN_SWING_SPEED = 1.2; // 손목 속도(m/s). 이보다 느리면 휘두른 게 아님 → 공이 라켓을 지나감
+const SWING_MEMORY_MS = 380;
+const MIN_SWING_SPEED = 0.7; // 손목 속도(m/s). 이보다 느리면 휘두른 게 아님 → 공이 라켓을 지나감
 
 const $ = (id) => document.getElementById(id);
 const video = $("video");
@@ -381,7 +381,7 @@ function aiHit() {
     TABLE_HEIGHT + BALL_R,
     0.45 + Math.random() * 0.75
   );
-  const hspeed = 4.2 + Math.min(game.rally * 0.12, 2.5) + Math.random() * 0.8;
+  const hspeed = 3.4 + Math.min(game.rally * 0.08, 1.6) + Math.random() * 0.6;
   ball.vel.copy(solveShot(ball.pos, target, hspeed));
   startRallyShot("ai");
   game.rally++;
@@ -572,7 +572,7 @@ function stepBall(h, frac0, frac1, now) {
     ball.pos.z <= AI_Z
   ) {
     const incoming = Math.hypot(ball.vel.x, ball.vel.z);
-    const missChance = 0.04 + Math.max(0, incoming - 6) * 0.07;
+    const missChance = 0.12 + Math.max(0, incoming - 5) * 0.09;
     const reachable = Math.abs(ball.pos.x - aiPaddle.group.position.x) < AI_REACH;
     if (reachable && Math.random() > missChance) aiHit();
   }
