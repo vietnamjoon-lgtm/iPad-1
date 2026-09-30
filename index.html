@@ -91,12 +91,14 @@
     .play::after { width: 176px; height: 176px; }
     .play svg { width: 34px; height: 34px; margin-left: 5px; }
 
-    /* 떠 있는 카드 */
-    .float { position: absolute; border-radius: 20px; background: rgba(255, 255, 255, 0.75);
-      border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: 0 20px 50px rgba(80, 70, 160, 0.2);
-      -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%); }
-    .float.tr { top: 12%; right: -3%; width: 26%; aspect-ratio: 3 / 4; }
-    .float.bl { bottom: 14%; left: -3%; width: 30%; aspect-ratio: 4 / 3; }
+    /* 떠 있는 미리보기 카드 */
+    .float { position: absolute; border-radius: 18px; overflow: hidden; background: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: 0 20px 50px rgba(80, 70, 160, 0.24); }
+    .float img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .float.tr { top: 10%; right: -4%; width: 30%; aspect-ratio: 3 / 4; }
+    .float.tr img { object-position: left top; }
+    .float.bl { bottom: 12%; left: -4%; width: 34%; aspect-ratio: 4 / 3; }
+    .float.bl img { object-position: left center; }
 
     footer { text-align: center; color: var(--muted); font-size: 13px; padding: 0 22px 40px; }
 
@@ -137,8 +139,8 @@
       <img class="shot" src="design/study.png" alt="공부 모드 화면" />
     </div>
 
-    <div class="float tr"></div>
-    <div class="float bl"></div>
+    <div class="float tr"><img src="design/notes.png" alt="영어 단어 노트" /></div>
+    <div class="float bl"><img src="design/quiz.png" alt="단어 퀴즈" /></div>
   </section>
 
   <footer>카메라는 각 화면에서 시작 버튼을 눌러야 켜져요.</footer>
