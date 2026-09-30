@@ -3,10 +3,12 @@
 }
 
 :root {
-  --accent: #2997ff;
-  --player: #ff9f47;
-  --ai: #4fc3ff;
-  --hairline: rgba(255, 255, 255, 0.12);
+  --accent: #0071e3;
+  --player: #ff8f1f;
+  --ai: #0a84ff;
+  --text: #1d1d1f;
+  --muted: #6e6e73;
+  --hairline: rgba(0, 0, 0, 0.1);
 }
 
 html,
@@ -14,8 +16,8 @@ body {
   margin: 0;
   height: 100%;
   overflow: hidden;
-  background: #05060a;
-  color: #f5f5f7;
+  background: #eef0f3;
+  color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   -webkit-font-smoothing: antialiased;
   -webkit-user-select: none;
@@ -41,10 +43,11 @@ body {
   gap: 14px;
   padding: 8px 22px;
   border-radius: 18px;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(255, 255, 255, 0.72);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid var(--hairline);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
   font-size: 34px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
@@ -59,7 +62,7 @@ body {
 #scoreboard .name {
   font-size: 15px;
   font-weight: 600;
-  opacity: 0.7;
+  color: var(--muted);
 }
 
 #score-player {
@@ -72,11 +75,11 @@ body {
 
 #serve-info {
   position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 76px);
+  top: calc(env(safe-area-inset-top, 0px) + 84px);
   left: 50%;
   transform: translateX(-50%);
   font-size: 14px;
-  opacity: 0.75;
+  color: var(--muted);
   white-space: nowrap;
 }
 
@@ -89,7 +92,7 @@ body {
   font-size: clamp(26px, 6vw, 48px);
   font-weight: 800;
   text-align: center;
-  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 2px 12px rgba(255, 255, 255, 0.7);
   opacity: 0;
   transition: opacity 0.2s, transform 0.2s;
   pointer-events: none;
@@ -114,17 +117,18 @@ body {
   bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
   padding: 12px 14px;
   border-radius: 16px;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(255, 255, 255, 0.72);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid var(--hairline);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
   text-align: center;
   font-size: 13px;
 }
 
 #power .label {
   margin-bottom: 6px;
-  opacity: 0.75;
+  color: var(--muted);
 }
 
 #power .bar {
@@ -144,7 +148,7 @@ body {
   right: 0;
   top: 0;
   height: 100%;
-  background: rgba(20, 22, 34, 0.88);
+  background: rgba(245, 245, 247, 0.9);
 }
 
 #power-last {
@@ -153,7 +157,7 @@ body {
   right: -2px;
   bottom: 0;
   height: 3px;
-  background: #fff;
+  background: #1d1d1f;
   opacity: 0;
 }
 
@@ -166,7 +170,7 @@ body {
 
 #rally {
   margin-top: 2px;
-  opacity: 0.7;
+  color: var(--muted);
 }
 
 #preview {
@@ -179,7 +183,7 @@ body {
   overflow: hidden;
   border: 1px solid var(--hairline);
   background: #000;
-  opacity: 0.9;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
 }
 
 #preview video,
@@ -214,7 +218,7 @@ body {
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(5, 6, 12, 0.6);
+  background: rgba(245, 245, 247, 0.6);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
 }
@@ -229,9 +233,9 @@ body {
   text-align: center;
   padding: 34px 30px;
   border-radius: 28px;
-  background: rgba(28, 28, 30, 0.72);
+  background: rgba(255, 255, 255, 0.86);
   border: 1px solid var(--hairline);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.18);
 }
 
 .card h2 {
@@ -246,7 +250,7 @@ body {
   padding: 0;
   list-style: none;
   line-height: 1.7;
-  opacity: 0.9;
+  color: var(--muted);
 }
 
 button {
@@ -268,7 +272,7 @@ button {
 }
 
 #start:active {
-  background: #1a86f0;
+  background: #0067cf;
   transform: scale(0.97);
 }
 
@@ -278,7 +282,7 @@ button {
 
 .hint {
   font-size: 13px;
-  opacity: 0.6;
+  color: var(--muted);
 }
 
 .link {
@@ -294,7 +298,7 @@ button {
   gap: 4px;
   padding: 4px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.06);
 }
 
 #side-pick button {
@@ -302,12 +306,13 @@ button {
   border: none;
   border-radius: 999px;
   background: transparent;
+  color: var(--muted);
   font-size: 14px;
-  opacity: 0.7;
 }
 
 #side-pick button.active {
-  background: rgba(255, 255, 255, 0.18);
+  background: #fff;
+  color: var(--text);
   font-weight: 700;
-  opacity: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
