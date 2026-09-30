@@ -106,6 +106,7 @@ $("test-sound").addEventListener("click", () => {
 const state = {
   running: false,
   paused: false,
+  alarmOff: false,
   calibUntil: 0,
   calibSamples: [],
   baselinePitch: null,
@@ -223,7 +224,7 @@ function analyze(result, now) {
   }
   const drowsy = drowsiness(now);
 
-  if (active && !state.calibUntil) {
+  if (active && !state.calibUntil && !state.alarmOff) {
     if (state.eyeClosedSince && now - state.eyeClosedSince > settings.eyeSec * 1000) {
       triggerAlarm("eyes", now);
     } else if (state.headDownSince && now - state.headDownSince > HEAD_DOWN_SEC * 1000) {
@@ -423,6 +424,14 @@ $("pause").addEventListener("click", (e) => {
   state.closedSamples = [];
 });
 
+$("alarm-toggle").addEventListener("click", (e) => {
+  state.alarmOff = !state.alarmOff;
+  e.currentTarget.textContent = state.alarmOff ? "🔔 경고 켜기" : "🔕 경고 끄기";
+  e.currentTarget.classList.toggle("active", state.alarmOff);
+  if (state.alarmOff && state.alarm) stopAlarm(performance.now());
+  toast(state.alarmOff ? "경고를 껐어요. 졸아도 알람이 안 울려요." : "경고를 다시 켰어요.");
+});
+
 // ---------- 메인 루프 ----------
 
 let landmarker = null;
@@ -488,6 +497,7 @@ $("start").addEventListener("click", async () => {
     $("start-screen").hidden = true;
     $("pause").disabled = false;
     $("recalibrate").disabled = false;
+    $("alarm-toggle").disabled = false;
     state.running = true;
     keepAwake();
     startCalibration();
