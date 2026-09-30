@@ -113,9 +113,18 @@
         <h3>🎯 단어 퀴즈</h3>
         <button id="quiz-quit" type="button">그만하기</button>
       </div>
-      <div id="quiz-progress" class="quiz-progress"></div>
+      <div id="quiz-setup">
+        <p class="quiz-setup-title">어떤 Day를 풀까요?</p>
+        <div id="quiz-days" class="quiz-days"></div>
+        <div class="quiz-setup-buttons">
+          <button id="quiz-all" type="button" class="ghost">전체 선택</button>
+          <button id="quiz-start" type="button">시작하기</button>
+        </div>
+      </div>
 
-      <div id="quiz-play">
+      <div id="quiz-progress" class="quiz-progress" hidden></div>
+
+      <div id="quiz-play" hidden>
         <div id="quiz-dir" class="quiz-dir"></div>
         <div id="quiz-question" class="quiz-question"></div>
         <form id="quiz-form" autocomplete="off">

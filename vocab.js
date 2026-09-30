@@ -159,14 +159,16 @@ function shuffle(arr) {
   return a;
 }
 
-// 선택한 Day 범위에서 뽑기가 끝난 Day의 단어를 모은다 (같은 단어는 한 번만)
-function collectQuizWords() {
-  let from = Number($("vocab-from").value);
-  let to = Number($("vocab-to").value);
-  if (from > to) [from, to] = [to, from];
+// 뽑기가 끝난 Day 번호들 (오름차순)
+function doneDays() {
+  return [...results.keys()].filter((d) => results.get(d)?.status === "done").sort((a, b) => a - b);
+}
+
+// 주어진 Day들에서 단어를 모은다 (같은 단어는 한 번만)
+function collectQuizWords(days) {
   const seen = new Set();
   const words = [];
-  for (let d = from; d <= to; d++) {
+  for (const d of days) {
     const r = results.get(d);
     if (!r || r.status !== "done") continue;
     for (const w of r.words) {
@@ -218,25 +220,61 @@ const quiz = {
   mastered: new Set(), // 맞힌 단어 (word 소문자)
   wrong: new Map(), // word 소문자 → { word, count }
   pendingRequeue: null, // 이번에 틀려서 다시 낼 단어
+  allWords: [], // 이번 라운드 전체 단어 (처음부터 다시용)
 };
 
-function startQuiz() {
-  const words = collectQuizWords();
-  if (words.length === 0) {
-    setStatus("⚠️ 퀴즈를 낼 단어가 없어요. 먼저 Day 범위의 단어를 뽑아 주세요.");
-    return;
-  }
+// 주어진 단어들로 한 라운드 시작
+function beginRound(words) {
   quiz.active = true;
+  quiz.allWords = words;
   quiz.queue = shuffle(words);
   quiz.total = words.length;
   quiz.mastered = new Set();
   quiz.wrong = new Map();
   quiz.pendingRequeue = null;
+}
 
+// 퀴즈 창을 열고 Day 고르는 화면을 보여준다
+function openQuiz() {
+  const days = doneDays();
+  if (days.length === 0) {
+    setStatus("⚠️ 퀴즈를 낼 단어가 없어요. 먼저 단어를 뽑아 주세요.");
+    return;
+  }
+  const box = $("quiz-days");
+  box.replaceChildren();
+  for (const d of days) {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "quiz-chip active"; // 기본은 전부 선택
+    chip.dataset.day = d;
+    chip.textContent = `Day ${d} (${results.get(d).words.length})`;
+    chip.addEventListener("click", () => chip.classList.toggle("active"));
+    box.append(chip);
+  }
   $("quiz").hidden = false;
+  $("quiz-setup").hidden = false;
+  $("quiz-progress").hidden = true;
+  $("quiz-play").hidden = true;
   $("quiz-result").hidden = true;
+  window.scrollTo(0, 0);
+}
+
+function startSelectedQuiz() {
+  const days = [...document.querySelectorAll("#quiz-days .quiz-chip.active")].map((c) => Number(c.dataset.day));
+  if (days.length === 0) {
+    setStatus("⚠️ 풀 Day를 하나 이상 골라 주세요.");
+    return;
+  }
+  const words = collectQuizWords(days);
+  if (words.length === 0) return;
+  beginRound(words);
+
+  $("quiz-setup").hidden = true;
+  $("quiz-result").hidden = true;
+  $("quiz-progress").hidden = false;
   $("quiz-play").hidden = false;
-  $("quiz").scrollIntoView({ behavior: "smooth", block: "start" });
+  window.scrollTo(0, 0);
   nextQuestion();
 }
 
@@ -349,20 +387,17 @@ function finishQuiz() {
   html += "</div>";
   box.innerHTML = html;
 
+  const restart = (words) => {
+    beginRound(words);
+    $("quiz-result").hidden = true;
+    $("quiz-progress").hidden = false;
+    $("quiz-play").hidden = false;
+    window.scrollTo(0, 0);
+    nextQuestion();
+  };
   const retryWrong = $("quiz-retry-wrong");
-  if (retryWrong) {
-    retryWrong.addEventListener("click", () => {
-      const words = missed.map((m) => m.word);
-      quiz.queue = shuffle(words);
-      quiz.total = words.length;
-      quiz.mastered = new Set();
-      quiz.wrong = new Map();
-      $("quiz-result").hidden = true;
-      $("quiz-play").hidden = false;
-      nextQuestion();
-    });
-  }
-  $("quiz-retry-all").addEventListener("click", startQuiz);
+  if (retryWrong) retryWrong.addEventListener("click", () => restart(missed.map((m) => m.word)));
+  $("quiz-retry-all").addEventListener("click", () => restart(quiz.allWords));
 }
 
 function quitQuiz() {
@@ -370,7 +405,11 @@ function quitQuiz() {
   $("quiz").hidden = true;
 }
 
-$("vocab-quiz").addEventListener("click", startQuiz);
+$("vocab-quiz").addEventListener("click", openQuiz);
+$("quiz-start").addEventListener("click", startSelectedQuiz);
+$("quiz-all").addEventListener("click", () => {
+  for (const c of document.querySelectorAll("#quiz-days .quiz-chip")) c.classList.add("active");
+});
 $("quiz-quit").addEventListener("click", quitQuiz);
 $("quiz-form").addEventListener("submit", (e) => {
   e.preventDefault();
