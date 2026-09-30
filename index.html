@@ -10,7 +10,7 @@
   <title>카메라 놀이터</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Caveat:wght@600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     :root {
       --ink: #0b0b12;
@@ -93,7 +93,6 @@
     .play::before { width: 132px; height: 132px; }
     .play::after { width: 176px; height: 176px; }
     .play svg { width: 34px; height: 34px; margin-left: 5px; }
-    .ph-text { font-family: var(--display); font-weight: 600; font-size: 15px; color: var(--muted); }
 
     /* 떠 있는 카드 */
     .float { position: absolute; border-radius: 20px; background: rgba(255, 255, 255, 0.75);
@@ -102,19 +101,12 @@
     .float.tr { top: 12%; right: -3%; width: 26%; aspect-ratio: 3 / 4; }
     .float.bl { bottom: 14%; left: -3%; width: 30%; aspect-ratio: 4 / 3; }
 
-    /* 손글씨 주석 */
-    .note { position: absolute; font-family: "Caveat", cursive; font-weight: 700; font-size: 26px; color: var(--ink); line-height: 1.1; }
-    .note svg { position: absolute; width: 56px; height: 44px; stroke: var(--ink); fill: none; stroke-width: 2; stroke-linecap: round; }
-    .note.n1 { top: 4%; right: 4%; text-align: right; }
-    .note.n1 svg { top: 100%; right: 8px; transform: rotate(6deg); }
-    .note.n2 { top: 30%; left: 1%; }
-    .note.n2 svg { top: 100%; left: 10px; transform: scaleX(-1) rotate(6deg); }
-
     footer { text-align: center; color: var(--muted); font-size: 13px; padding: 0 22px 40px; }
 
     @media (max-width: 720px) {
       .nav-links { display: none; }
-      .float, .note { display: none; }
+      .float { display: none; }
+
       .play { width: 74px; height: 74px; }
       .play::before { width: 108px; height: 108px; }
       .play::after { width: 144px; height: 144px; }
@@ -155,19 +147,11 @@
         <div class="play">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
         </div>
-        <div class="ph-text">여기에 사진 · 영상이 들어가요</div>
       </div>
     </div>
 
     <div class="float tr"></div>
     <div class="float bl"></div>
-
-    <div class="note n1">멋진 기능
-      <svg viewBox="0 0 56 44"><path d="M4 4 C 30 6, 44 18, 50 38"/><path d="M50 38 l -12 -3 M50 38 l 3 -12"/></svg>
-    </div>
-    <div class="note n2">직접 해봐요!
-      <svg viewBox="0 0 56 44"><path d="M4 4 C 30 6, 44 18, 50 38"/><path d="M50 38 l -12 -3 M50 38 l 3 -12"/></svg>
-    </div>
   </section>
 
   <footer>카메라는 각 화면에서 시작 버튼을 눌러야 켜져요.</footer>
