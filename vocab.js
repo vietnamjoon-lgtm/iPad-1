@@ -134,7 +134,9 @@ function render() {
     box.append(block);
   }
 
-  $("vocab-copy-all").hidden = !days.some((d) => results.get(d).status === "done");
+  const hasDone = days.some((d) => results.get(d).status === "done");
+  $("vocab-copy-all").hidden = !hasDone;
+  $("vocab-quiz").hidden = !hasDone;
 }
 
 $("vocab-copy-all").addEventListener("click", (e) => {
@@ -145,6 +147,237 @@ $("vocab-copy-all").addEventListener("click", (e) => {
     .join("\n\n");
   copyText(text, e.currentTarget);
 });
+
+// ---------- 퀴즈 ----------
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// 선택한 Day 범위에서 뽑기가 끝난 Day의 단어를 모은다 (같은 단어는 한 번만)
+function collectQuizWords() {
+  let from = Number($("vocab-from").value);
+  let to = Number($("vocab-to").value);
+  if (from > to) [from, to] = [to, from];
+  const seen = new Set();
+  const words = [];
+  for (let d = from; d <= to; d++) {
+    const r = results.get(d);
+    if (!r || r.status !== "done") continue;
+    for (const w of r.words) {
+      const key = w.word.toLowerCase();
+      if (w.word && w.meaning && !seen.has(key)) {
+        seen.add(key);
+        words.push(w);
+      }
+    }
+  }
+  return words;
+}
+
+// 영어 정답 정리: 앞뒤 공백·대소문자 무시, 중간 공백은 하나로
+function normEn(s) {
+  return s.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+// 한국어 뜻을 여러 개로 쪼갠다 (쉼표·슬래시·세미콜론 등)
+function splitMeanings(meaning) {
+  return meaning
+    .split(/[,，、;/·]|\s{2,}/)
+    .map((m) => m.trim())
+    .filter(Boolean);
+}
+
+// 한국어 정답 정리: 모든 공백 제거 (띄어쓰기 무시)
+function normKo(s) {
+  return s.replace(/\s+/g, "");
+}
+
+function isCorrect(word, dir, answer) {
+  if (dir === "en") {
+    // 영어를 보여주고 한국어 뜻을 쓴 경우: 뜻 중 하나만 맞아도 정답
+    const given = normKo(answer);
+    if (!given) return false;
+    return splitMeanings(word.meaning).some((m) => normKo(m) === given);
+  }
+  // 한국어 뜻을 보여주고 영어를 쓴 경우
+  return normEn(answer) === normEn(word.word);
+}
+
+const quiz = {
+  active: false,
+  queue: [], // 앞으로 낼 단어 (틀리면 뒤에 다시 넣음)
+  current: null,
+  dir: "en",
+  total: 0,
+  mastered: new Set(), // 맞힌 단어 (word 소문자)
+  wrong: new Map(), // word 소문자 → { word, count }
+  pendingRequeue: null, // 이번에 틀려서 다시 낼 단어
+};
+
+function startQuiz() {
+  const words = collectQuizWords();
+  if (words.length === 0) {
+    setStatus("⚠️ 퀴즈를 낼 단어가 없어요. 먼저 Day 범위의 단어를 뽑아 주세요.");
+    return;
+  }
+  quiz.active = true;
+  quiz.queue = shuffle(words);
+  quiz.total = words.length;
+  quiz.mastered = new Set();
+  quiz.wrong = new Map();
+  quiz.pendingRequeue = null;
+
+  $("quiz").hidden = false;
+  $("quiz-result").hidden = true;
+  $("quiz-play").hidden = false;
+  $("quiz").scrollIntoView({ behavior: "smooth", block: "start" });
+  nextQuestion();
+}
+
+function nextQuestion() {
+  quiz.pendingRequeue = null;
+  if (quiz.queue.length === 0) return finishQuiz();
+
+  quiz.current = quiz.queue.shift();
+  quiz.dir = Math.random() < 0.5 ? "en" : "ko";
+
+  const remaining = quiz.total - quiz.mastered.size;
+  $("quiz-progress").textContent = `남은 단어 ${remaining} / ${quiz.total}개`;
+  $("quiz-dir").textContent = quiz.dir === "en" ? "뜻을 한국어로 쓰세요" : "영어 단어를 쓰세요";
+  $("quiz-question").textContent = quiz.dir === "en" ? quiz.current.word : quiz.current.meaning;
+
+  const input = $("quiz-input");
+  input.value = "";
+  input.disabled = false;
+  $("quiz-submit").disabled = false;
+  $("quiz-feedback").hidden = true;
+  input.focus();
+}
+
+function submitAnswer() {
+  if (!quiz.active || $("quiz-input").disabled) return;
+  const word = quiz.current;
+  const answer = $("quiz-input").value;
+  if (!answer.trim()) return;
+
+  if (isCorrect(word, quiz.dir, answer)) {
+    quiz.mastered.add(word.word.toLowerCase());
+    showFeedback(true);
+  } else {
+    const key = word.word.toLowerCase();
+    const entry = quiz.wrong.get(key) || { word, count: 0 };
+    entry.count++;
+    quiz.wrong.set(key, entry);
+    quiz.pendingRequeue = word; // 다음으로 넘어갈 때 뒤에 다시 넣는다
+    showFeedback(false);
+  }
+}
+
+function showFeedback(correct) {
+  $("quiz-input").disabled = true;
+  $("quiz-submit").disabled = true;
+  const fb = $("quiz-feedback");
+  fb.hidden = false;
+  fb.classList.toggle("correct", correct);
+  fb.classList.toggle("wrong", !correct);
+  $("quiz-answer").innerHTML = correct
+    ? "✅ 정답!"
+    : `❌ 정답: <b>${escapeHtml(quiz.current.word)}</b> — ${escapeHtml(quiz.current.meaning)}`;
+  // 맞았을 때는 "사실 맞았어"가 필요 없다
+  $("quiz-override").hidden = correct;
+  $("quiz-next").focus();
+}
+
+function escapeHtml(s) {
+  const div = document.createElement("div");
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+// "사실 맞았어": 방금 틀린 걸 정답 처리
+function overrideCorrect() {
+  if (!quiz.pendingRequeue) return;
+  const word = quiz.pendingRequeue;
+  const key = word.word.toLowerCase();
+  const entry = quiz.wrong.get(key);
+  if (entry) {
+    entry.count--;
+    if (entry.count <= 0) quiz.wrong.delete(key);
+  }
+  quiz.mastered.add(key);
+  quiz.pendingRequeue = null;
+  nextQuestion();
+}
+
+function advance() {
+  if (quiz.pendingRequeue) {
+    // 틀린 단어는 나중에 다시 나오도록 뒤쪽 임의 위치에 넣는다
+    const pos = Math.floor(Math.random() * (quiz.queue.length + 1));
+    quiz.queue.splice(pos, 0, quiz.pendingRequeue);
+  }
+  nextQuestion();
+}
+
+function finishQuiz() {
+  $("quiz-play").hidden = true;
+  const box = $("quiz-result");
+  box.hidden = false;
+  const missed = [...quiz.wrong.values()].sort((a, b) => b.count - a.count);
+  const totalMisses = missed.reduce((sum, m) => sum + m.count, 0);
+
+  let html = "<h4>🎉 다 맞혔어요!</h4>";
+  if (missed.length === 0) {
+    html += `<p>${quiz.total}개를 한 번에 다 맞혔어요. 완벽해요!</p>`;
+  } else {
+    html += `<p>단어 <b>${quiz.total}개</b> 중 <b>${missed.length}개</b>를 틀렸어요 (총 ${totalMisses}번 틀림).</p>`;
+    html += "<div class='quiz-missed-title'>많이 틀린 단어</div>";
+    html += "<table class='vocab-day'><tbody>";
+    for (const m of missed) {
+      html += `<tr><td>${escapeHtml(m.word.word)}</td><td>${escapeHtml(m.word.meaning)}</td><td class='quiz-count'>${m.count}번</td></tr>`;
+    }
+    html += "</tbody></table>";
+  }
+  html += "<div class='quiz-result-buttons'>";
+  if (missed.length > 0) html += "<button id='quiz-retry-wrong' type='button'>❌ 틀린 것만 다시</button>";
+  html += "<button id='quiz-retry-all' type='button' class='ghost'>🔁 처음부터 다시</button>";
+  html += "</div>";
+  box.innerHTML = html;
+
+  const retryWrong = $("quiz-retry-wrong");
+  if (retryWrong) {
+    retryWrong.addEventListener("click", () => {
+      const words = missed.map((m) => m.word);
+      quiz.queue = shuffle(words);
+      quiz.total = words.length;
+      quiz.mastered = new Set();
+      quiz.wrong = new Map();
+      $("quiz-result").hidden = true;
+      $("quiz-play").hidden = false;
+      nextQuestion();
+    });
+  }
+  $("quiz-retry-all").addEventListener("click", startQuiz);
+}
+
+function quitQuiz() {
+  quiz.active = false;
+  $("quiz").hidden = true;
+}
+
+$("vocab-quiz").addEventListener("click", startQuiz);
+$("quiz-quit").addEventListener("click", quitQuiz);
+$("quiz-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  submitAnswer();
+});
+$("quiz-next").addEventListener("click", advance);
+$("quiz-override").addEventListener("click", overrideCorrect);
 
 // ---------- PDF ----------
 

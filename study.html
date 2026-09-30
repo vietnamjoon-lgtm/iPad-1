@@ -49,6 +49,7 @@
           <div class="buttons">
             <button id="pause" type="button" disabled>⏸ 쉬는 시간</button>
             <button id="recalibrate" type="button" disabled>🎯 자세 다시 맞추기</button>
+            <button id="alarm-toggle" type="button" disabled>🔕 경고 끄기</button>
           </div>
         </div>
 
@@ -101,9 +102,37 @@
         <select id="vocab-to" aria-label="끝 Day"></select>
         <button id="vocab-run" type="button" disabled>단어 뽑기</button>
         <button id="vocab-copy-all" type="button" hidden>📋 전체 복사</button>
+        <button id="vocab-quiz" type="button" hidden>🎯 퀴즈</button>
       </div>
       <p id="vocab-status">PDF는 이 기기 안에서만 열려요. 고른 Day 쪽 이미지만 Gemini로 보내요.</p>
       <div id="vocab-results"></div>
+    </section>
+
+    <section class="card quiz" id="quiz" hidden>
+      <div class="quiz-top">
+        <h3>🎯 단어 퀴즈</h3>
+        <button id="quiz-quit" type="button">그만하기</button>
+      </div>
+      <div id="quiz-progress" class="quiz-progress"></div>
+
+      <div id="quiz-play">
+        <div id="quiz-dir" class="quiz-dir"></div>
+        <div id="quiz-question" class="quiz-question"></div>
+        <form id="quiz-form" autocomplete="off">
+          <input id="quiz-input" type="text" inputmode="text" autocapitalize="off"
+                 autocorrect="off" spellcheck="false" placeholder="답을 입력하세요" />
+          <button id="quiz-submit" type="submit">제출</button>
+        </form>
+        <div id="quiz-feedback" class="quiz-feedback" hidden>
+          <div id="quiz-answer" class="quiz-answer"></div>
+          <div class="quiz-feedback-buttons">
+            <button id="quiz-next" type="button">다음 →</button>
+            <button id="quiz-override" type="button" class="ghost">사실 맞았어</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="quiz-result" class="quiz-result" hidden></div>
     </section>
   </div>
 
