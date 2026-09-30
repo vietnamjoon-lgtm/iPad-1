@@ -248,7 +248,7 @@ function drowsiness(now) {
 // ---------- 알람 ----------
 
 function triggerAlarm(reason, now) {
-  if (state.alarm || now < state.snoozeUntil) return;
+  if (state.alarmOff || state.alarm || now < state.snoozeUntil) return;
   state.alarm = { reason };
   state.alarmClearSince = null;
   state.stats.alarms++;
