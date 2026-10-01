@@ -2,58 +2,47 @@
   box-sizing: border-box;
 }
 
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Caveat:wght@600;700&display=swap');
-
 :root {
-  --bg: #f5f5f7;
-  --card: #ffffff;
-  --line: rgba(0, 0, 0, 0.1);
-  --text: #1d1d1f;
-  --muted: #6e6e73;
+  /* 나머지 색·글꼴은 apple.css의 공통 변수를 쓴다 */
+  --card: var(--surface);
   --ok: #34c759;
   --warn: #ff9500;
   --bad: #ff3b30;
-  --accent: #6a5cff;
-  --fill: #f2f2f7;
-  --display: "Poppins", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
 }
 
 html,
 body {
   margin: 0;
   min-height: 100%;
-  background: linear-gradient(180deg, #eef1fb 0%, #f6f2fb 45%, #fbf4f8 100%);
-  background-attachment: fixed;
+  background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  font-family: var(--font);
   -webkit-font-smoothing: antialiased;
 }
 
 #app {
   max-width: 1100px;
   margin: 0 auto;
-  padding: calc(env(safe-area-inset-top, 0px) + 16px) max(16px, env(safe-area-inset-right)) calc(env(safe-area-inset-bottom, 0px) + 24px) max(16px, env(safe-area-inset-left));
+  padding: 0 max(16px, env(safe-area-inset-right)) calc(env(safe-area-inset-bottom, 0px) + 32px) max(16px, env(safe-area-inset-left));
 }
 
-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
+.page-head {
+  padding: 36px 4px 22px;
 }
 
-header h1 {
+.page-head .eyebrow {
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--orange);
+}
+
+.page-head h1 {
   margin: 0;
   font-family: var(--display);
+  font-size: clamp(34px, 5vw, 48px);
   font-weight: 700;
-  font-size: 22px;
-}
-
-nav,
-nav a {
-  color: var(--muted);
-  font-size: 14px;
+  letter-spacing: -0.015em;
 }
 
 main {
@@ -76,15 +65,15 @@ main {
 
 .card {
   background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 16px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.05);
+  border-radius: 22px;
+  padding: 20px;
 }
 
 .card h3 {
-  margin: 0 0 10px;
-  font-size: 15px;
+  margin: 0 0 12px;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 /* ----- 카메라 ----- */
@@ -112,10 +101,13 @@ main {
   top: 12px;
   left: 12px;
   padding: 6px 14px;
-  border-radius: 999px;
+  border-radius: 980px;
   font-size: 14px;
-  font-weight: 700;
-  background: rgba(0, 0, 0, 0.6);
+  font-weight: 600;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 
 .status.focus {
@@ -140,6 +132,7 @@ main {
   text-align: center;
   font-size: 18px;
   line-height: 1.6;
+  color: #fff;
   background: rgba(0, 0, 0, 0.55);
 }
 
@@ -183,7 +176,7 @@ main {
   height: 100%;
   width: 0;
   border-radius: 5px;
-  background: var(--accent);
+  background: var(--blue);
   transition: width 0.1s linear, background 0.2s;
 }
 
@@ -214,8 +207,9 @@ main {
 
 #timer {
   margin: 4px 0;
-  font-size: clamp(40px, 8vw, 56px);
-  font-weight: 800;
+  font-size: clamp(44px, 8vw, 64px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   letter-spacing: 1px;
 }
@@ -240,11 +234,11 @@ main {
 button {
   font: inherit;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--text);
-  background: var(--fill);
-  border: 1px solid var(--line);
-  border-radius: 999px;
+  background: var(--fill-2);
+  border: 0;
+  border-radius: 980px;
   padding: 10px 16px;
   cursor: pointer;
   transition: background 0.2s ease, transform 0.1s ease;
@@ -272,8 +266,9 @@ button.active {
 
 .stats span {
   display: block;
-  font-size: 28px;
-  font-weight: 800;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .stats small {
@@ -354,9 +349,8 @@ button.active {
   position: relative;
   overflow: hidden;
   font-size: 14px;
-  background: var(--fill);
-  border: 1px solid var(--line);
-  border-radius: 999px;
+  background: var(--fill-2);
+  border-radius: 980px;
   padding: 10px 16px;
   cursor: pointer;
 }
@@ -375,14 +369,14 @@ button.active {
   color: var(--text);
   background: var(--fill);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 9px 10px;
 }
 
 .vocab-extract {
   margin: 6px 0 4px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
+  background: var(--fill);
+  border-radius: 14px;
   padding: 10px 14px;
 }
 
@@ -409,8 +403,8 @@ button.active {
 }
 
 .vocab-day {
-  border: 1px solid var(--line);
-  border-radius: 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
   overflow: hidden;
 }
 
@@ -539,15 +533,15 @@ button.active {
 .quiz-chip {
   font-size: 16px;
   padding: 12px 18px;
-  border-radius: 999px;
+  border-radius: 980px;
   background: var(--fill);
   border: 2px solid var(--line);
   color: var(--muted);
 }
 
 .quiz-chip.active {
-  background: rgba(122, 162, 255, 0.18);
-  border-color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--blue);
   color: var(--text);
   font-weight: 700;
 }
@@ -561,9 +555,9 @@ button.active {
 
 #quiz-start {
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 14px 30px;
-  background: var(--accent);
+  background: var(--blue);
   color: #fff;
   border-color: transparent;
 }
@@ -574,7 +568,7 @@ button.active {
 }
 
 .quiz-dir {
-  color: var(--accent);
+  color: var(--blue);
   font-size: 14px;
   font-weight: 700;
   margin-bottom: 8px;
@@ -609,14 +603,15 @@ button.active {
 
 #quiz-input:focus {
   outline: none;
-  border-color: var(--accent);
+  border-color: var(--blue);
+  box-shadow: 0 0 0 4px var(--accent-soft);
 }
 
 #quiz-submit {
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 18px 30px;
-  background: var(--accent);
+  background: var(--blue);
   color: #fff;
   border-color: transparent;
 }
@@ -655,9 +650,9 @@ button.active {
 
 #quiz-next {
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 14px 26px;
-  background: var(--accent);
+  background: var(--blue);
   color: #fff;
   border-color: transparent;
 }
@@ -715,12 +710,13 @@ button.ghost {
   width: max-content;
   max-width: calc(100% - 32px);
   padding: 12px 20px;
-  border-radius: 14px;
-  background: var(--warn);
-  color: #2d2000;
-  font-weight: 700;
+  z-index: 65;
+  border-radius: 980px;
+  background: rgba(29, 29, 31, 0.92);
+  color: #fff;
+  font-weight: 600;
   text-align: center;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-lg);
 }
 
 #toast[hidden],
@@ -731,6 +727,7 @@ button.ghost {
 #alarm {
   position: fixed;
   inset: 0;
+  z-index: 70;
   display: grid;
   place-items: center;
   padding: 16px;
@@ -766,12 +763,14 @@ button.ghost {
 
 #alarm-title {
   font-size: clamp(36px, 9vw, 64px);
-  font-weight: 900;
+  font-weight: 800;
+  color: #fff;
 }
 
 #alarm-reason {
   margin: 8px 0 20px;
   font-size: 18px;
+  color: #fff;
 }
 
 #alarm-stop {
@@ -788,12 +787,14 @@ button.ghost {
 #start-screen {
   position: fixed;
   inset: 0;
+  z-index: 60;
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(8, 10, 14, 0.9);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
+  overflow-y: auto;
+  background: rgba(245, 245, 247, 0.75);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
 }
 
 #start-screen[hidden] {
@@ -801,19 +802,35 @@ button.ghost {
 }
 
 .start-box {
-  max-width: 460px;
+  max-width: 480px;
+  width: 100%;
+  padding: 40px 32px 32px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
   text-align: center;
 }
 
 .start-box h2 {
-  margin: 0 0 8px;
-  font-size: 30px;
+  margin: 0 0 10px;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.start-box > p {
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 .start-box ul {
-  padding: 0;
+  margin: 18px 0;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: var(--fill);
   list-style: none;
   line-height: 1.9;
+  text-align: left;
 }
 
 .start-box .hint {
@@ -824,11 +841,11 @@ button.ghost {
 
 #start {
   margin-top: 8px;
-  padding: 14px 36px;
-  font-size: 18px;
-  font-weight: 800;
-  background: linear-gradient(135deg, #7aa2ff, #3ecf8e);
-  color: #0b1020;
+  padding: 14px 34px;
+  font-size: 17px;
+  font-weight: 400;
+  background: var(--blue);
+  color: #fff;
   border: none;
 }
 

@@ -1117,6 +1117,9 @@ const setBarHeight = () => document.documentElement.style.setProperty("--bar-h",
 new ResizeObserver(setBarHeight).observe(bar);
 setBarHeight();
 
-window.addEventListener("hashchange", render);
+window.addEventListener("hashchange", () => {
+  if (searchOpen) closeSearch();
+  render();
+});
 updateProgress();
 render();

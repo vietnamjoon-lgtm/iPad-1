@@ -1,0 +1,154 @@
+/* 사이트 공통 디자인 (애플 홈페이지 스타일)
+   모든 페이지가 이 파일을 먼저 불러오고, 페이지 CSS는 아래 변수만 써서 색·글꼴을 맞춘다. */
+
+:root {
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --surface-2: #fbfbfd;
+  --fill: #f5f5f7;
+  --fill-2: #e8e8ed;
+  --text: #1d1d1f;
+  --ink: #1d1d1f;
+  --muted: #6e6e73;
+  --faint: #86868b;
+  --hairline: rgba(0, 0, 0, 0.08);
+  --line: rgba(0, 0, 0, 0.1);
+  --blue: #0071e3;
+  --blue-hover: #0077ed;
+  --link: #0066cc;
+  --accent: #0071e3;
+  --accent-soft: rgba(0, 113, 227, 0.1);
+  --green: #1d8a3a;
+  --orange: #bf4800;
+  --red: #e30000;
+  --shadow: 0 2px 6px rgba(0, 0, 0, 0.04), 0 12px 40px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.06), 0 30px 80px rgba(0, 0, 0, 0.12);
+  --radius: 18px;
+  --radius-lg: 28px;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Apple SD Gothic Neo", "Helvetica Neue", "Noto Sans KR", sans-serif;
+  --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Apple SD Gothic Neo", "Helvetica Neue", "Noto Sans KR", sans-serif;
+  --body: var(--font);
+}
+
+/* ----- 위쪽 공통 메뉴 (반투명 유리 막대) ----- */
+
+.gnav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(251, 251, 253, 0.8);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.gnav.flat {
+  position: relative;
+}
+
+.gnav-in {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 1024px;
+  height: 48px;
+  margin: 0 auto;
+  padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.gnav-in::-webkit-scrollbar {
+  display: none;
+}
+
+.gnav a {
+  flex: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-family: var(--font);
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.8);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.gnav a:hover {
+  color: #000;
+}
+
+.gnav a[aria-current="page"] {
+  color: #000;
+  font-weight: 600;
+}
+
+.gnav .gnav-logo {
+  margin-right: auto;
+  padding-left: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+/* ----- 공통 버튼 ----- */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 11px 22px;
+  border: 0;
+  border-radius: 980px;
+  background: var(--blue);
+  color: #fff;
+  font-family: var(--font);
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.pill:hover {
+  background: var(--blue-hover);
+}
+
+.pill:active {
+  transform: scale(0.98);
+}
+
+.pill.ghost {
+  background: transparent;
+  color: var(--blue);
+  box-shadow: inset 0 0 0 1px var(--blue);
+}
+
+.pill.ghost:hover {
+  background: var(--blue);
+  color: #fff;
+}
+
+.more-link {
+  color: var(--link);
+  font-size: 17px;
+  text-decoration: none;
+}
+
+.more-link::after {
+  content: " ›";
+}
+
+.more-link:hover {
+  text-decoration: underline;
+}
+
+/* 한국어 줄바꿈은 낱말 단위로 */
+body {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}

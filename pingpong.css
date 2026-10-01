@@ -2,16 +2,9 @@
   box-sizing: border-box;
 }
 
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Caveat:wght@600;700&display=swap');
-
 :root {
-  --accent: #6a5cff;
   --player: #ff8f1f;
   --ai: #0a84ff;
-  --text: #1d1d1f;
-  --muted: #6e6e73;
-  --hairline: rgba(0, 0, 0, 0.1);
-  --display: "Poppins", -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
 }
 
 html,
@@ -19,9 +12,9 @@ body {
   margin: 0;
   height: 100%;
   overflow: hidden;
-  background: linear-gradient(180deg, #eef1fb 0%, #f6f2fb 45%, #fbf4f8 100%);
+  background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  font-family: var(--font);
   -webkit-font-smoothing: antialiased;
   -webkit-user-select: none;
   user-select: none;
@@ -208,10 +201,11 @@ body {
   left: 50%;
   transform: translateX(-50%);
   padding: 10px 18px;
-  border-radius: 999px;
-  background: rgba(255, 69, 58, 0.92);
+  border-radius: 980px;
+  background: rgba(255, 59, 48, 0.92);
   -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
+  color: #fff;
   font-weight: 600;
 }
 
@@ -221,7 +215,7 @@ body {
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(245, 245, 247, 0.6);
+  background: rgba(245, 245, 247, 0.72);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
 }
@@ -234,19 +228,18 @@ body {
   max-width: 400px;
   width: 100%;
   text-align: center;
-  padding: 34px 30px;
-  border-radius: 28px;
-  background: rgba(255, 255, 255, 0.86);
-  border: 1px solid var(--hairline);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.18);
+  padding: 40px 30px 30px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
 }
 
 .card h2 {
   margin: 0 0 12px;
   font-family: var(--display);
-  font-size: 28px;
+  font-size: 32px;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.015em;
 }
 
 .card ul {
@@ -265,19 +258,18 @@ button {
 
 #start {
   margin: 14px 0 6px;
-  padding: 15px 32px;
+  padding: 14px 30px;
   border: none;
-  border-radius: 999px;
-  font-family: var(--display);
+  border-radius: 980px;
   font-size: 17px;
-  font-weight: 600;
+  font-weight: 400;
   color: #fff;
-  background: #0b0b12;
+  background: var(--blue);
   transition: background 0.2s ease, transform 0.1s ease;
 }
 
 #start:active {
-  background: #000;
+  background: var(--blue-hover);
   transform: scale(0.97);
 }
 
@@ -291,7 +283,7 @@ button {
 }
 
 .link {
-  color: var(--accent);
+  color: var(--link);
   font-size: 14px;
   text-decoration: none;
 }
@@ -302,14 +294,14 @@ button {
   margin: 0 auto;
   gap: 4px;
   padding: 4px;
-  border-radius: 999px;
+  border-radius: 980px;
   background: rgba(0, 0, 0, 0.06);
 }
 
 #side-pick button {
   padding: 8px 16px;
   border: none;
-  border-radius: 999px;
+  border-radius: 980px;
   background: transparent;
   color: var(--muted);
   font-size: 14px;
