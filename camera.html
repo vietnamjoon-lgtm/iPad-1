@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f5f5f7" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="카메라 놀이터" />
+  <title>카메라 놀이터 · 한국사2 공부</title>
+  <link rel="stylesheet" href="apple.css" />
+  <style>
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      color: var(--text);
+      font-family: var(--font);
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      word-break: keep-all;
+    }
+
+    /* 히어로 */
+    .hero { max-width: 980px; margin: 0 auto; padding: clamp(56px, 9vh, 96px) 22px 0; text-align: center; }
+    .eyebrow { margin: 0 0 10px; font-size: clamp(19px, 2.4vw, 24px); font-weight: 600; color: var(--orange); }
+    .hero h1 { margin: 0 0 14px; font-family: var(--display); font-size: clamp(44px, 8vw, 80px); font-weight: 700;
+      line-height: 1.05; letter-spacing: -0.015em; color: var(--text); }
+    .hero .lede { max-width: 30ch; margin: 0 auto 28px; font-size: clamp(19px, 2.6vw, 24px); line-height: 1.4; color: var(--text); }
+    .cta { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 14px 26px; }
+
+    /* 제품 사진 */
+    .stage { position: relative; max-width: 940px; margin: clamp(44px, 7vh, 72px) auto 0; padding: 0 22px; }
+    .device { position: relative; overflow: hidden; aspect-ratio: 16 / 10; border-radius: 28px;
+      background: var(--surface); box-shadow: var(--shadow-lg); }
+    .device .shot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .float { position: absolute; display: flex; flex-direction: column; gap: 8px; padding: 22px; border-radius: 22px;
+      background: rgba(255, 255, 255, 0.86); box-shadow: var(--shadow-lg);
+      -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); }
+    .float .fi { font-size: 30px; line-height: 1; }
+    .float .ft { font-size: 19px; font-weight: 600; letter-spacing: -0.01em; }
+    .float .fs { font-size: 14px; line-height: 1.4; color: var(--muted); }
+    .float.tr { top: 12%; right: -3%; width: 25%; }
+    .float.bl { bottom: 12%; left: -3%; width: 27%; }
+
+    /* 타일 */
+    .tiles-wrap { max-width: 1024px; margin: 0 auto; padding: clamp(72px, 11vh, 120px) 22px 0; }
+    .tiles-wrap h2 { margin: 0 0 26px; font-family: var(--display); font-size: clamp(32px, 5vw, 48px); font-weight: 700;
+      letter-spacing: -0.01em; text-align: center; }
+    .tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .tile { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+      min-height: 380px; padding: 48px 28px 40px; border-radius: 28px; background: var(--surface); text-align: center;
+      color: var(--text); text-decoration: none; overflow: hidden; }
+    .tile.dark { background: #000; color: #f5f5f7; }
+    .tile.wide { grid-column: 1 / -1; }
+    .tile .ti { font-size: 64px; line-height: 1; margin-bottom: 18px; }
+    .tile h3 { margin: 0 0 6px; font-family: var(--display); font-size: clamp(28px, 3.6vw, 40px); font-weight: 700; letter-spacing: -0.01em; }
+    .tile p { margin: 0 0 18px; max-width: 26ch; font-size: clamp(17px, 2vw, 21px); line-height: 1.4; }
+    .tile.dark p { color: #a1a1a6; }
+    .tile .go { color: var(--link); font-size: 17px; }
+    .tile.dark .go { color: #2997ff; }
+    .tile .go::after { content: " ›"; }
+    .tile:hover .go { text-decoration: underline; }
+    .tile .feat { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: auto; padding-top: 22px; }
+    .tile .feat span { padding: 6px 12px; border-radius: 980px; background: var(--fill); color: var(--muted); font-size: 13px; }
+    .tile.dark .feat span { background: #1d1d1f; color: #a1a1a6; }
+
+    footer { max-width: 1024px; margin: 0 auto; padding: 48px 22px calc(env(safe-area-inset-bottom, 0px) + 40px);
+      color: var(--faint); font-size: 12px; line-height: 1.6; border-top: 0; }
+    footer p { margin: 56px 0 0; padding-top: 16px; border-top: 1px solid var(--line); }
+
+    /* 고르기 창 (지금 해보기) */
+    .chooser { position: fixed; inset: 0; z-index: 100; display: none; place-items: center; padding: 22px; overflow-y: auto;
+      background: rgba(245, 245, 247, 0.72); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); }
+    .chooser.open { display: grid; }
+    .chooser-panel { width: 100%; max-width: 860px; text-align: center; }
+    .chooser-panel h2 { margin: 0 0 26px; font-family: var(--display); font-size: clamp(32px, 5vw, 48px); font-weight: 700; letter-spacing: -0.01em; }
+    .choose-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .choose-card { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 32px 20px 28px; border-radius: 22px;
+      background: var(--surface); box-shadow: var(--shadow); color: var(--text); text-decoration: none; text-align: center;
+      transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.3s ease; }
+    .choose-card:hover, .choose-card:focus-visible { transform: scale(1.02); box-shadow: var(--shadow-lg); outline: none; }
+    .choose-card:active { transform: scale(0.99); }
+    .choose-card .ci { font-size: 44px; line-height: 1.1; }
+    .choose-card .cn { font-size: 21px; font-weight: 600; letter-spacing: -0.01em; }
+    .choose-card .cd { font-size: 14px; line-height: 1.45; color: var(--muted); word-break: keep-all; }
+    .chooser-close { margin-top: 24px; padding: 10px 18px; border: 0; border-radius: 980px; background: var(--fill-2);
+      color: var(--text); font: inherit; font-size: 15px; cursor: pointer; }
+
+    @media (max-width: 1000px) {
+      .float.tr { right: 0; }
+      .float.bl { left: 0; }
+    }
+    @media (max-width: 900px) {
+      .choose-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 734px) {
+      .float { display: none; }
+      .tiles { grid-template-columns: 1fr; }
+      .tile { min-height: 320px; }
+    }
+    @media (max-width: 520px) {
+      .choose-grid { grid-template-columns: 1fr; gap: 10px; }
+      .choose-card { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 2px 14px; padding: 16px 18px; text-align: left; }
+      .choose-card .ci { grid-row: span 2; font-size: 36px; }
+      .choose-card .cn { font-size: 18px; }
+      .choose-card .cd { font-size: 13.5px; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+  <nav class="gnav" aria-label="메뉴">
+    <div class="gnav-in">
+      <a class="gnav-logo" href="index.html">한국사2 공부</a>
+      <a href="camera.html" aria-current="page">카메라 놀이터</a>
+      <a href="hand.html">손 3D</a>
+      <a href="pingpong.html">탁구</a>
+      <a href="study.html">공부 모드</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <p class="eyebrow">카메라 놀이터</p>
+    <h1>카메라만 있으면<br />놀 준비 끝.</h1>
+    <p class="lede">손동작 미러, 팔 휘두르는 탁구, 졸음 막는 공부 모드까지. 설치 없이 브라우저에서 바로.</p>
+    <div class="cta">
+      <button class="pill" id="open-chooser" type="button">지금 해보기</button>
+      <a class="more-link" href="#tiles">더 알아보기</a>
+    </div>
+  </header>
+
+  <section class="stage">
+    <div class="device">
+      <img class="shot" src="design/study.png" alt="공부 모드 화면" />
+    </div>
+    <div class="float tr">
+      <span class="fi">📖</span>
+      <span class="ft">영어 단어장 정리</span>
+      <span class="fs">PDF만 넣으면 Day별로 자동 정리</span>
+    </div>
+    <div class="float bl">
+      <span class="fi">🎯</span>
+      <span class="ft">퀴즈도 가능!</span>
+      <span class="fs">틀린 단어는 다 맞출 때까지 반복</span>
+    </div>
+  </section>
+
+  <section class="tiles-wrap" id="tiles">
+    <h2>모두 둘러보기</h2>
+    <div class="tiles">
+      <a class="tile dark wide" href="study.html">
+        <span class="ti">📚</span>
+        <h3>공부 모드</h3>
+        <p>졸거나 엎드리면 알람. 단어장 정리와 퀴즈까지.</p>
+        <span class="go">공부 시작하기</span>
+        <span class="feat"><span>졸음 감지</span><span>공부 시간</span><span>단어 퀴즈</span></span>
+      </a>
+      <a class="tile" href="hand.html">
+        <span class="ti">🖐</span>
+        <h3>손 3D 미러</h3>
+        <p>3D 손이 내 손을 그대로 따라 움직여요.</p>
+        <span class="go">해 보기</span>
+        <span class="feat"><span>두 손 인식</span><span>시점 회전</span></span>
+      </a>
+      <a class="tile dark" href="pingpong.html">
+        <span class="ti">🏓</span>
+        <h3>1인칭 탁구</h3>
+        <p>팔을 휘둘러 AI와 랠리를 이어 가요.</p>
+        <span class="go">경기 시작하기</span>
+        <span class="feat"><span>스윙 세기</span><span>AI 상대</span></span>
+      </a>
+    </div>
+  </section>
+
+  <footer>
+    <p>카메라는 각 화면에서 시작 버튼을 눌러야 켜져요.</p>
+  </footer>
+
+  <div class="chooser" id="chooser" role="dialog" aria-modal="true" aria-label="무엇을 해볼까요?">
+    <div class="chooser-panel">
+      <h2>무엇을 해볼까요?</h2>
+      <div class="choose-grid">
+        <a class="choose-card" href="hand.html">
+          <span class="ci">🖐</span>
+          <span class="cn">손 3D 미러</span>
+          <span class="cd">3D 손이 내 손을 따라 움직여요</span>
+        </a>
+        <a class="choose-card" href="pingpong.html">
+          <span class="ci">🏓</span>
+          <span class="cn">1인칭 탁구</span>
+          <span class="cd">팔을 휘둘러 AI와 탁구를 쳐요</span>
+        </a>
+        <a class="choose-card" href="study.html">
+          <span class="ci">📚</span>
+          <span class="cn">공부 모드</span>
+          <span class="cd">졸면 알람, 단어장·퀴즈까지</span>
+        </a>
+      </div>
+      <button class="chooser-close" id="close-chooser" type="button">닫기</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var chooser = document.getElementById("chooser");
+      var open = document.getElementById("open-chooser");
+      var close = document.getElementById("close-chooser");
+      function show() { chooser.classList.add("open"); }
+      function hide() { chooser.classList.remove("open"); }
+      open.addEventListener("click", show);
+      close.addEventListener("click", hide);
+      chooser.addEventListener("click", function (e) { if (e.target === chooser) hide(); });
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape") hide(); });
+    })();
+  </script>
+</body>
+</html>

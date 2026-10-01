@@ -1,6 +1,6 @@
 # 배포 & 녹화 저장 설정
 
-홈(`index.html`)에서 손 3D(`hand.html`), 탁구(`pingpong.html`), Study Guard(`study.html`)를 고를 수 있어요. GitHub Pages에 올리고 녹화 영상을 내 구글 드라이브에 저장하는 방법이에요.
+첫 화면(`index.html`)은 한국사2 공부이고, 카메라 놀이터(`camera.html`)에서 손 3D(`hand.html`), 탁구(`pingpong.html`), Study Guard(`study.html`)를 고를 수 있어요. GitHub Pages에 올리고 녹화 영상을 내 구글 드라이브에 저장하는 방법이에요.
 
 ## 1. 구글 Apps Script 웹앱 만들기 (드라이브 저장용)
 
@@ -36,7 +36,7 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/……/exec";
 2. **Build and deployment → Source: Deploy from a branch**
 3. **Branch: `main`**, 폴더는 **`/ (root)`** → **Save**
 4. 1~2분 뒤 `https://<내아이디>.github.io/<저장소이름>/pingpong.html` 로 열려요.
-   (첫 화면 `index.html`은 홈이에요. 거기서 손 3D·탁구·공부 모드를 고르면 돼요.)
+   (첫 화면 `index.html`은 한국사2 공부예요. 손 3D·탁구·공부 모드는 `camera.html`에서 고르면 돼요.)
 
 > GitHub Pages는 https라서 카메라가 켜져요. 아이폰·아이패드 사파리는
 > **화면을 한 번 탭해야** 카메라·소리가 켜지는 규칙이 있어서, 게임에 "탭하여 시작" 버튼 하나만 남겼어요.
