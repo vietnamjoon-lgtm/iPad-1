@@ -105,13 +105,13 @@
     .float.bl .fi { background: rgba(52, 199, 89, 0.16); }
 
     /* 선택 화면 (지금 해보기) */
-    .chooser { position: fixed; inset: 0; z-index: 100; display: none; place-items: center; padding: 22px;
+    .chooser { position: fixed; inset: 0; z-index: 100; display: none; place-items: center; padding: 22px; overflow-y: auto;
       background: rgba(243, 241, 251, 0.7); -webkit-backdrop-filter: blur(20px) saturate(160%); backdrop-filter: blur(20px) saturate(160%); }
     .chooser.open { display: grid; }
-    .chooser-panel { width: 100%; max-width: 860px; text-align: center; }
+    .chooser-panel { width: 100%; max-width: 980px; text-align: center; }
     .chooser-panel h2 { font-family: var(--display); font-weight: 800; font-size: clamp(1.8rem, 5vw, 2.6rem);
       letter-spacing: -0.02em; color: var(--ink); margin: 0 0 26px; }
-    .choose-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+    .choose-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
     .choose-card { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px;
       padding: 30px 22px; border-radius: 24px; background: #fff; border: 1px solid var(--hairline);
       box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 18px 44px rgba(80,70,160,0.14); color: var(--text); text-decoration: none;
@@ -120,15 +120,26 @@
     .choose-card:active { transform: translateY(-2px) scale(0.99); }
     .choose-card .ci { display: grid; place-items: center; width: 66px; height: 66px; border-radius: 20px; font-size: 36px; background: var(--tint); }
     .choose-card .cn { font-family: var(--display); font-weight: 700; font-size: 20px; letter-spacing: -0.01em; color: var(--ink); }
-    .choose-card .cd { font-size: 14px; line-height: 1.45; color: var(--muted); }
+    .choose-card .cd { font-size: 14px; line-height: 1.45; color: var(--muted); word-break: keep-all; }
     .choose-card.hand  { --tint: rgba(106, 92, 255, 0.14); }
     .choose-card.ping  { --tint: rgba(255, 149, 0, 0.16); }
     .choose-card.study { --tint: rgba(52, 199, 89, 0.16); }
+    .choose-card.hist  { --tint: rgba(255, 59, 48, 0.12); }
     .chooser-close { margin-top: 24px; font-family: var(--display); font-weight: 600; font-size: 15px; color: var(--muted);
       background: none; border: none; cursor: pointer; }
 
     footer { text-align: center; color: var(--muted); font-size: 13px; padding: 0 22px 40px; }
 
+    @media (max-width: 900px) {
+      .choose-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 520px) {
+      .choose-grid { grid-template-columns: 1fr; gap: 10px; }
+      .choose-card { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 2px 14px; text-align: left; padding: 16px 18px; }
+      .choose-card .ci { grid-row: span 2; width: 52px; height: 52px; font-size: 28px; border-radius: 16px; }
+      .choose-card .cn { font-size: 18px; }
+      .choose-card .cd { font-size: 13.5px; }
+    }
     @media (max-width: 720px) {
       .nav-links { display: none; }
       .float { display: none; }
@@ -149,6 +160,7 @@
       <a href="hand.html">손 3D</a>
       <a href="pingpong.html">탁구</a>
       <a href="study.html">공부 모드</a>
+      <a href="history.html">한국사</a>
     </div>
   </nav>
 
@@ -197,6 +209,11 @@
           <span class="ci">📚</span>
           <span class="cn">공부 모드</span>
           <span class="cd">졸면 알람, 단어장·퀴즈까지</span>
+        </a>
+        <a class="choose-card hist" href="history.html">
+          <span class="ci">📜</span>
+          <span class="cn">한국사2 공부</span>
+          <span class="cd">키워드 검색·연표·퀴즈로 한국사2 정리</span>
         </a>
       </div>
       <button class="chooser-close" id="close-chooser" type="button">닫기</button>

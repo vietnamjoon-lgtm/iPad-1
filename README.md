@@ -4,10 +4,11 @@
 
 | 페이지 | 설명 |
 |---|---|
-| `index.html` | 🏠 홈: 아래 3개를 고르는 메인 화면 |
+| `index.html` | 🏠 홈: 아래 페이지를 고르는 메인 화면 |
 | `hand.html` | 🖐 손 3D 미러: 3D 손 모델이 내 손을 실시간으로 따라 움직여요 |
 | `pingpong.html` | 🏓 1인칭 탁구: 팔을 휘둘러서 AI와 탁구를 쳐요 (MediaPipe Pose) |
 | `study.html` | 📚 Study Guard: 졸거나 엎드리면 알람이 울려요 (MediaPipe Face Landmarker). 📖 단어장 PDF에서 Day별 단어·뜻 모으기 + 퀴즈 (Gemini) |
+| `history.html` | 📜 한국사2 공부 (2022 개정, 해냄에듀 목차 순서): 주제 30개 핵심 정리·용어 사전·연표·비교표·퀴즈 + 키워드 검색. 카메라 없이 쓰는 페이지이고, 내용은 `history/unit1~3.js`에 있어요 |
 
 - 손 인식: [MediaPipe Hand Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker) (손 관절 21개, 최대 2손)
 - 3D 렌더링: [Three.js](https://threejs.org/)
