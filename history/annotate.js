@@ -37,8 +37,7 @@ let redo = [];
 let current = null;
 let activePointer = null;
 let activeType = "";
-const touches = new Map();
-let scrollTouch = null;
+let fingers = 0; // 화면에 닿아 있는 손가락 수 (펜슬 제외)
 let anchors = new Map(); // 앵커 이름 → 요소
 let observer = null;
 let frame = 0;
@@ -66,6 +65,11 @@ export async function mountAnnotations(el, id) {
   live.addEventListener("pointerup", onUp);
   live.addEventListener("pointercancel", onUp);
   live.addEventListener("contextmenu", (e) => e.preventDefault());
+  // 스크롤은 브라우저에 맡기고, 쓰는 중일 때만 막는다
+  live.addEventListener("touchstart", onTouch, { passive: false });
+  live.addEventListener("touchmove", onTouch, { passive: false });
+  live.addEventListener("touchend", onTouch);
+  live.addEventListener("touchcancel", onTouch);
   data = (await storeGet(keyOf(id))) || { topic: id, strokes: [] };
   if (article !== el) return; // 그 사이 다른 주제로 넘어감
   undo = [];
@@ -88,7 +92,7 @@ export function unmountAnnotations() {
   layer = ink = live = article = null;
   current = null;
   activePointer = null;
-  touches.clear();
+  fingers = 0;
   if (bar) bar.hidden = true;
 }
 
@@ -204,18 +208,25 @@ function pointIn(e) {
   return [Math.round((e.clientX - a.left) * 10) / 10, Math.round((e.clientY - a.top) * 10) / 10, Math.round(pressure * 100) / 100];
 }
 
+// ---------- 손가락: 펜슬만 쓰기일 때는 한 손가락, 아니면 두 손가락으로 스크롤 ----------
+// 아이패드 사파리는 터치 이벤트를 막아야만 스크롤이 멈추므로, 쓰는 중일 때만 막는다.
+
+const isStylus = (t) => t.touchType === "stylus";
+
+function onTouch(e) {
+  const all = [...e.touches];
+  fingers = all.filter((t) => !isStylus(t)).length;
+  if (e.type === "touchend" || e.type === "touchcancel") return;
+  // 두 번째 손가락이 닿으면 한 손가락으로 쓰던 획은 취소하고 스크롤에 맡긴다
+  if (fingers >= 2 && activeType === "touch") cancelStroke();
+  const stylus = all.some(isStylus) || [...e.changedTouches].some(isStylus);
+  if (stylus || activeType === "pen") e.preventDefault();
+  else if (e.type === "touchmove" && activeType === "touch" && fingers === 1) e.preventDefault();
+}
+
 function onDown(e) {
   if (!on) return;
-  if (e.pointerType === "touch") {
-    touches.set(e.pointerId, e.clientY);
-    // 펜슬만 쓰기이거나 두 손가락이면 손가락은 화면을 위아래로 움직인다
-    if (!fingerAllowed() || touches.size >= 2) {
-      if (activeType === "touch") cancelStroke();
-      scrollTouch = e.pointerId;
-      e.preventDefault();
-      return;
-    }
-  }
+  if (e.pointerType === "touch" && (!fingerAllowed() || fingers >= 2 || !e.isPrimary)) return;
   if (activePointer !== null) return;
   if (e.pointerType === "pen" && fingerAllowed() && !onDown.noticed) {
     onDown.noticed = true;
@@ -223,7 +234,7 @@ function onDown(e) {
     toast("펜슬이 감지돼서 손가락으로는 화면을 움직이게 했어요. 아래 ✋ 버튼으로 바꿀 수 있어요.");
     updateBar();
   }
-  e.preventDefault();
+  if (e.pointerType !== "touch") e.preventDefault();
   activePointer = e.pointerId;
   activeType = e.pointerType;
   try {
@@ -241,12 +252,6 @@ function onDown(e) {
 }
 
 function onMove(e) {
-  if (e.pointerType === "touch" && touches.has(e.pointerId)) {
-    const last = touches.get(e.pointerId);
-    touches.set(e.pointerId, e.clientY);
-    if (scrollTouch === e.pointerId) window.scrollBy(0, last - e.clientY);
-    if (scrollTouch !== null) return;
-  }
   if (e.pointerId !== activePointer || !current) return;
   const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
   for (const ev of events.length ? events : [e]) {
@@ -261,11 +266,9 @@ function onMove(e) {
 }
 
 function onUp(e) {
-  if (touches.delete(e.pointerId)) {
-    if (scrollTouch === e.pointerId) scrollTouch = touches.size ? [...touches.keys()][0] : null;
-    if (e.pointerId !== activePointer) return;
-  }
   if (e.pointerId !== activePointer) return;
+  // 브라우저가 스크롤을 시작하면 손가락 획은 취소된다
+  if (e.type === "pointercancel" && activeType === "touch") return cancelStroke();
   activePointer = null;
   activeType = "";
   const s = current;
