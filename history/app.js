@@ -2,6 +2,8 @@
 // 내용은 data.js(→ unit1~3.js)에 있고, 이 파일은 화면만 그린다.
 
 import { UNITS, TOPICS, COMPARE, LINKS, SUGGEST } from "./data.js";
+import { openNote, closeNote, noteIsFull, noteTopic, listNotes, thumbnail } from "./notes.js";
+import { mountAnnotations, unmountAnnotations, toggleAnnotate } from "./annotate.js";
 
 const $ = (id) => document.getElementById(id);
 const view = $("view");
@@ -250,7 +252,7 @@ function updateProgress() {
 
 // ---------- 화면 전환 ----------
 
-const TABS = ["study", "timeline", "terms", "compare", "quiz", "links"];
+const TABS = ["study", "timeline", "terms", "compare", "quiz", "notes", "links"];
 let pending = null; // 검색 결과·용어 카드에서 넘어왔을 때 { focus: 보여 줄 data-key, hl: 색칠할 검색어 }
 
 function route() {
@@ -272,6 +274,7 @@ function render() {
     else a.removeAttribute("aria-current");
   }
   const hl = pending ? hlRegex(pending.hl) : null;
+  unmountAnnotations();
   if (tab === "study") {
     if (arg && topicById.has(Number(arg))) renderTopic(Number(arg), hl);
     else renderOverview();
@@ -279,6 +282,7 @@ function render() {
   else if (tab === "terms") renderTerms();
   else if (tab === "compare") renderCompare(hl);
   else if (tab === "quiz") renderQuiz();
+  else if (tab === "notes") renderNotes();
   else renderLinks();
 
   const target = pending?.focus && view.querySelector(`[data-key="${pending.focus}"]`);
@@ -381,6 +385,7 @@ function renderTopic(id, hl) {
   const prev = TOPICS[i - 1];
   const next = TOPICS[i + 1];
   save(LAST_KEY, id);
+  if (noteTopic() !== null && noteTopic() !== id) openTopicNote(id);
   document.title = `${topicLabel(id)} ${tp.title} · 한국사2`;
   const terms = TERMS.filter((x) => x.topic === id);
   const events = EVENTS.filter((e) => e.topic === id);
@@ -391,7 +396,11 @@ function renderTopic(id, hl) {
       ${tocHTML(id)}
       <article class="topic u${u.id}">
         <header class="topic-head">
-          <button type="button" class="toc-open" data-action="toc-open">☰ 주제 목록</button>
+          <div class="topic-tools">
+            <button type="button" class="toc-open" data-action="toc-open">☰ 주제 목록</button>
+            <button type="button" class="note-btn" data-action="note" data-id="${id}">✏️ 필기 노트</button>
+            <button type="button" class="ann-btn" data-action="annotate" aria-pressed="false">✍️ 본문에 필기</button>
+          </div>
           <p class="crumb"><span class="badge">대주제 ${u.id}</span>${esc(u.title)}</p>
           <h2><span class="num">${topicLabel(id)}</span>${esc(tp.title)}</h2>
           <p class="period">${esc(tp.period)}</p>
@@ -439,6 +448,7 @@ function renderTopic(id, hl) {
         </footer>
       </article>
     </div>`;
+  mountAnnotations(view.querySelector(".topic"), id);
 }
 
 // ---------- 연표 ----------
@@ -583,6 +593,48 @@ function renderCompare(hl) {
         </section>`,
       ).join("")}
     </section>`;
+}
+
+// ---------- 필기 노트 ----------
+
+// 노트 옆에 띄워 볼 주제 핵심 정리
+function noteSideHTML(tp) {
+  const plain = (t) => esc(t).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  return `<h3>${topicLabel(tp.id)} ${esc(tp.title)}</h3>
+    ${tp.sections.map((s) => `<h4>${esc(s.h)}</h4><ul>${s.items.map((it) => `<li>${plain(it)}</li>`).join("")}</ul>`).join("")}`;
+}
+
+function openTopicNote(id) {
+  const tp = topicById.get(id);
+  openNote(id, { label: topicLabel(id), title: tp.title, sideHTML: noteSideHTML(tp) }, () => {
+    if (route().tab === "notes") renderNotes();
+  });
+}
+
+async function renderNotes() {
+  document.title = "필기 노트 · 한국사2";
+  const notes = (await listNotes()).sort((a, b) => b.updated - a.updated);
+  if (route().tab !== "notes") return;
+  view.innerHTML = `
+    <section class="panel">
+      <div class="panel-head">
+        <h2>필기 노트 <small>${notes.length}개 주제</small></h2>
+        <p class="hint">주제 화면의 ‘✏️ 필기 노트’를 누르면 애플펜슬로 쓸 수 있어요. 노트는 이 기기에만 저장돼요.</p>
+        <div class="chips small">${TOPICS.map((tp) => `<button type="button" class="chipbtn" data-action="note" data-id="${tp.id}">${pad(tp.id)}</button>`).join("")}</div>
+      </div>
+      ${notes.length ? `<ul class="note-list">${notes
+        .map((n) => {
+          const tp = topicById.get(n.topic);
+          const pages = n.pages.filter((p) => p.length).length;
+          const date = new Date(n.updated).toLocaleDateString("ko-KR", { month: "long", day: "numeric" });
+          return `<li class="u${unitOf.get(n.topic).id}"><button type="button" data-action="note" data-id="${n.topic}">
+            <span class="nl-thumb" data-thumb="${n.topic}"></span>
+            <span class="nl-text"><b>${topicLabel(n.topic)} ${esc(tp.title)}</b><small>${pages}쪽 · ${date}</small></span>
+          </button></li>`;
+        })
+        .join("")}</ul>` : `<p class="empty">아직 쓴 노트가 없어요. 위 번호를 누르거나 주제 화면에서 ‘✏️ 필기 노트’를 눌러 시작해 보세요.</p>`}
+    </section>`;
+  for (const n of notes) view.querySelector(`[data-thumb="${n.topic}"]`)?.append(thumbnail(n, 240));
 }
 
 // ---------- 자료실 ----------
@@ -1008,6 +1060,13 @@ document.addEventListener("click", (e) => {
   const action = t.dataset.action;
   if (action === "toc-open") $("study").classList.add("toc-shown");
   else if (action === "toc-close") $("study").classList.remove("toc-shown");
+  else if (action === "note") {
+    // 같은 주제 노트가 열려 있으면 닫고, 아니면 연다
+    const id = Number(t.dataset.id);
+    if (noteTopic() === id && t.classList.contains("note-btn")) closeNote();
+    else openTopicNote(id);
+  }
+  else if (action === "annotate") toggleAnnotate();
   else if (action === "done") {
     toggleDone(Number(t.dataset.id));
     const on = done.has(Number(t.dataset.id));
@@ -1082,6 +1141,10 @@ document.addEventListener("change", (e) => {
 });
 
 document.addEventListener("keydown", (e) => {
+  if (noteIsFull()) {
+    if (e.key === "Escape") closeNote();
+    return;
+  }
   // 용어 카드가 열려 있으면 Tab 키 이동을 카드 안에서만 돌게 한다
   if (e.key === "Tab" && !sheet.hidden) {
     const items = [...sheet.querySelectorAll("button, a[href]")];
