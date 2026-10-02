@@ -93,6 +93,8 @@ export function unmountAnnotations() {
   current = null;
   activePointer = null;
   fingers = 0;
+  pan = null;
+  cancelAnimationFrame(glide);
   if (bar) bar.hidden = true;
 }
 
@@ -208,25 +210,63 @@ function pointIn(e) {
   return [Math.round((e.clientX - a.left) * 10) / 10, Math.round((e.clientY - a.top) * 10) / 10, Math.round(pressure * 100) / 100];
 }
 
-// ---------- 손가락: 펜슬만 쓰기일 때는 한 손가락, 아니면 두 손가락으로 스크롤 ----------
-// 아이패드 사파리는 터치 이벤트를 막아야만 스크롤이 멈추므로, 쓰는 중일 때만 막는다.
+// ---------- 손가락 스크롤 ----------
+// 펜슬만 쓰기일 때는 한 손가락, 아니면 두 손가락으로 본문을 올리고 내린다.
+// 사파리 기본 스크롤에 맡기면 두 손가락이 페이지 확대로 잡혀서 화면이 흔들리므로,
+// 터치 이벤트를 모두 막고 스크롤은 직접 한다 (손을 떼면 관성으로 조금 더 미끄러짐).
 
 const isStylus = (t) => t.touchType === "stylus";
+let pan = null; // { y: 손가락들 가운데 y, v: 속도(px/ms), t: 시각 }
+let glide = 0;
+
+function fingerMid(e) {
+  const list = [...e.touches].filter((t) => !isStylus(t));
+  return list.length ? list.reduce((a, t) => a + t.clientY, 0) / list.length : null;
+}
 
 function onTouch(e) {
-  const all = [...e.touches];
-  fingers = all.filter((t) => !isStylus(t)).length;
-  if (e.type === "touchend" || e.type === "touchcancel") return;
-  // 두 번째 손가락이 닿으면 한 손가락으로 쓰던 획은 취소하고 스크롤에 맡긴다
+  if (e.cancelable) e.preventDefault();
+  fingers = [...e.touches].filter((t) => !isStylus(t)).length;
+  const scrolling = fingers >= 2 || (fingers >= 1 && !fingerAllowed());
   if (fingers >= 2 && activeType === "touch") cancelStroke();
-  const stylus = all.some(isStylus) || [...e.changedTouches].some(isStylus);
-  if (stylus || activeType === "pen") e.preventDefault();
-  else if (e.type === "touchmove" && activeType === "touch" && fingers === 1) e.preventDefault();
+  if (e.type === "touchstart") cancelAnimationFrame(glide);
+  if (!scrolling || activeType === "pen") {
+    // 손가락을 다 떼면 관성 스크롤
+    if (pan && e.type !== "touchstart" && Math.abs(pan.v) > 0.05) startGlide(pan.v);
+    pan = null;
+    return;
+  }
+  const y = fingerMid(e);
+  const now = e.timeStamp;
+  // 손가락 수가 바뀌면 가운데 위치가 튀므로 기준만 다시 잡는다
+  if (!pan || pan.n !== fingers) {
+    pan = { y, v: pan ? pan.v : 0, t: now, n: fingers };
+    return;
+  }
+  const dy = y - pan.y;
+  window.scrollBy(0, -dy);
+  const dt = Math.max(1, now - pan.t);
+  pan.v = 0.8 * (-dy / dt) + 0.2 * pan.v;
+  pan.y = y;
+  pan.t = now;
+}
+
+function startGlide(v) {
+  let last = performance.now();
+  const step = (now) => {
+    const dt = Math.min(32, now - last);
+    last = now;
+    window.scrollBy(0, v * dt);
+    v *= Math.pow(0.95, dt / 16);
+    if (Math.abs(v) > 0.02) glide = requestAnimationFrame(step);
+  };
+  glide = requestAnimationFrame(step);
 }
 
 function onDown(e) {
   if (!on) return;
   if (e.pointerType === "touch" && (!fingerAllowed() || fingers >= 2 || !e.isPrimary)) return;
+  cancelAnimationFrame(glide);
   if (activePointer !== null) return;
   if (e.pointerType === "pen" && fingerAllowed() && !onDown.noticed) {
     onDown.noticed = true;
@@ -234,7 +274,7 @@ function onDown(e) {
     toast("펜슬이 감지돼서 손가락으로는 화면을 움직이게 했어요. 아래 ✋ 버튼으로 바꿀 수 있어요.");
     updateBar();
   }
-  if (e.pointerType !== "touch") e.preventDefault();
+  e.preventDefault();
   activePointer = e.pointerId;
   activeType = e.pointerType;
   try {
@@ -267,7 +307,6 @@ function onMove(e) {
 
 function onUp(e) {
   if (e.pointerId !== activePointer) return;
-  // 브라우저가 스크롤을 시작하면 손가락 획은 취소된다
   if (e.type === "pointercancel" && activeType === "touch") return cancelStroke();
   activePointer = null;
   activeType = "";

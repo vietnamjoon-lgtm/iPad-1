@@ -2032,8 +2032,8 @@ body.noting {
 
 .topic.annotating .ann-layer canvas:last-child {
   pointer-events: auto;
-  /* 손가락 스크롤은 브라우저가 하게 두고, 쓰는 중에만 스크립트가 막는다 */
-  touch-action: manipulation;
+  /* 페이지 확대·기본 스크롤을 막고, 손가락 스크롤은 annotate.js가 한다 */
+  touch-action: none;
   cursor: crosshair;
 }
 
