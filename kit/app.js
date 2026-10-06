@@ -6,7 +6,8 @@ import { openNote, closeNote, noteIsFull, noteTopic, listNotes, thumbnail, setSt
 import { mountAnnotations, unmountAnnotations, toggleAnnotate } from "./annotate.js";
 
 const SUBJECT_DIR = document.documentElement.dataset.subject || "history";
-const { UNITS, TOPICS, COMPARE, LINKS, SUGGEST, SUBJECT } = await import(`../${SUBJECT_DIR}/data.js`);
+const { UNITS, TOPICS, COMPARE, LINKS, SUGGEST, SUBJECT, FIGURES = {} } = await import(`../${SUBJECT_DIR}/data.js`);
+const TL_NAME = SUBJECT.timelineName || "연표";
 setStore(SUBJECT.store, SUBJECT.name);
 
 const $ = (id) => document.getElementById(id);
@@ -51,7 +52,10 @@ const { KIND_GROUP, GROUPS } = SUBJECT;
 const DOTS = "·・‧∙ㆍ.";
 const PUNCT_RE = /[\s,'"‘’“”「」『』()\[\]<>~\-–—:;!?…\/]/g;
 const DOTS_RE = new RegExp(`[${DOTS}]`, "g");
-const norm = (s) => String(s).toLowerCase().replace(PUNCT_RE, "").replace(DOTS_RE, "·");
+// 화학식의 아래·위 첨자는 보통 글자로 바꿔 찾는다 (CO₂ = CO2, H⁺ = H+)
+const SCRIPT = { "₀": "0", "₁": "1", "₂": "2", "₃": "3", "₄": "4", "₅": "5", "₆": "6", "₇": "7", "₈": "8", "₉": "9", "⁰": "0", "¹": "1", "²": "2", "³": "3", "⁴": "4", "⁺": "+", "⁻": "-" };
+const SCRIPT_RE = /[₀-₉⁰¹²³⁴⁺⁻]/g;
+const norm = (s) => String(s).replace(SCRIPT_RE, (c) => SCRIPT[c]).toLowerCase().replace(PUNCT_RE, "").replace(DOTS_RE, "·");
 const norm2 = (s) => norm(s).replace(/·/g, "");
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 // 원문에서 글자 사이에 끼어 있을 수 있는 띄어쓰기·문장 부호
@@ -358,6 +362,11 @@ function tocHTML(current) {
     </aside>`;
 }
 
+// 그림(도식): 과목 데이터의 FIGURES에 있는 SVG와 설명
+function figureHTML(f) {
+  return `<figure class="fig"><div class="fig-art">${f.svg}</div><figcaption>${esc(f.cap)}</figcaption></figure>`;
+}
+
 function termCard(x, hl) {
   const meta = [x.k, x.y].filter(Boolean).join(" · ");
   return `<button type="button" class="term-card" data-term="${x.key}" data-key="${x.key}">
@@ -416,6 +425,7 @@ function renderTopic(id, hl) {
             <div class="sec">
               <h4>${esc(s.h)}</h4>
               <ul>${s.items.map((it, ii) => `<li data-key="n${id}-${si}-${ii}">${rich(it, hl)}</li>`).join("")}</ul>
+              ${s.fig && FIGURES[s.fig] ? figureHTML(FIGURES[s.fig]) : ""}
             </div>`,
             )
             .join("")}
@@ -427,7 +437,7 @@ function renderTopic(id, hl) {
         </section>
 
         <section class="block"${events.length ? "" : " hidden"}>
-          <h3>연표</h3>
+          <h3>${TL_NAME}</h3>
           <ol class="mini-tl">
             ${events
               .map(
@@ -457,7 +467,7 @@ function renderTopic(id, hl) {
 let tlUnit = 0; // 0이면 전체
 
 function renderTimeline() {
-  document.title = `연표 · ${SUBJECT.name}`;
+  document.title = `${TL_NAME} · ${SUBJECT.name}`;
   const list = EVENTS.filter((e) => !tlUnit || unitOf.get(e.topic).id === tlUnit);
   const years = new Map();
   for (const e of list) {
@@ -472,7 +482,7 @@ function renderTimeline() {
   view.innerHTML = `
     <section class="panel">
       <div class="panel-head">
-        <h2>연표 <small>${list.length}개</small></h2>
+        <h2>${TL_NAME} <small>${list.length}개</small></h2>
         <div class="chips" role="group" aria-label="${SUBJECT.unitWord}">
           ${[0, ...UNITS.map((u) => u.id)]
             .map((id) => `<button type="button" class="chipbtn${tlUnit === id ? " on" : ""}" data-action="tl-unit" data-unit="${id}">${id ? esc(unitBadge(UNITS.find((u) => u.id === id))) : "전체"}</button>`)
@@ -878,7 +888,7 @@ function renderQuizResult() {
 
 // ---------- 키워드 검색 ----------
 
-const TYPE_LABEL = { term: "용어", topic: "주제", note: "핵심 정리", event: "연표", compare: "비교 정리", ox: "O/X" };
+const TYPE_LABEL = { term: "용어", topic: SUBJECT.topicWord, note: "핵심 정리", event: TL_NAME, compare: "비교 정리", ox: "O/X" };
 const SHOW = 6;
 let expanded = new Set();
 let searchOpen = false;

@@ -806,6 +806,48 @@ tr.flash {
   margin-top: 18px;
 }
 
+/* 과학 그림(도식) */
+.fig {
+  margin: 14px 0 6px;
+  padding: 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.fig-art svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 420px;
+  font-family: var(--body);
+}
+
+.fig figcaption {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13.5px;
+  text-align: center;
+}
+
+/* 통합과학2: 대단원 색(Ⅰ 초록, Ⅱ 파랑, Ⅲ 보라) */
+[data-subject="science"] {
+  --u1: #1d7f45;
+  --u1-soft: rgba(29, 138, 58, 0.11);
+  --u2: #0062c4;
+  --u2-soft: rgba(0, 113, 227, 0.1);
+  --u3: #7a3fb0;
+  --u3-soft: rgba(122, 63, 176, 0.1);
+}
+
+[data-subject="science"] .toc-unit .n {
+  width: 30px;
+}
+
+[data-subject="science"] .topic-list .n {
+  font-size: 14px;
+}
+
 /* 소단원 이름(① ②) */
 .sub {
   margin: 22px 0 10px;
