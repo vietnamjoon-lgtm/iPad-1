@@ -1,9 +1,13 @@
-// 한국사2 공부: 단원 학습 · 연표 · 용어 사전 · 비교 정리 · 퀴즈 · 자료실과 키워드 검색.
-// 내용은 data.js(→ unit1~3.js)에 있고, 이 파일은 화면만 그린다.
+// 과목 공부 화면: 단원 학습 · 연표 · 용어 사전 · 비교 정리 · 퀴즈 · 노트 · 자료실과 키워드 검색.
+// 과목 내용은 <html data-subject="폴더">의 data.js에 있고, 이 파일은 화면만 그린다.
+// (한국사2: history/data.js, 통합사회2: society/data.js)
 
-import { UNITS, TOPICS, COMPARE, LINKS, SUGGEST } from "./data.js";
-import { openNote, closeNote, noteIsFull, noteTopic, listNotes, thumbnail } from "./notes.js";
+import { openNote, closeNote, noteIsFull, noteTopic, listNotes, thumbnail, setStore } from "./notes.js";
 import { mountAnnotations, unmountAnnotations, toggleAnnotate } from "./annotate.js";
+
+const SUBJECT_DIR = document.documentElement.dataset.subject || "history";
+const { UNITS, TOPICS, COMPARE, LINKS, SUGGEST, SUBJECT } = await import(`../${SUBJECT_DIR}/data.js`);
+setStore(SUBJECT.store, SUBJECT.name);
 
 const $ = (id) => document.getElementById(id);
 const view = $("view");
@@ -37,15 +41,8 @@ for (const tp of TOPICS) {
 EVENTS.sort((a, b) => a.sort - b.sort || a.topic - b.topic);
 const termByKey = new Map(TERMS.map((x) => [x.key, x]));
 
-const KIND_GROUP = {
-  인물: "인물",
-  단체: "단체·기구", 기구: "단체·기구",
-  사건: "사건·운동", 운동: "사건·운동", 전투: "사건·운동",
-  정책: "정책·법·제도", 법령: "정책·법·제도", 제도: "정책·법·제도",
-  조약: "조약·선언·회담", 선언: "조약·선언·회담", 회담: "조약·선언·회담",
-  개념: "개념·문화", 문헌: "개념·문화",
-};
-const GROUPS = ["인물", "단체·기구", "사건·운동", "정책·법·제도", "조약·선언·회담", "개념·문화"];
+// 용어 종류(k) → 용어 사전의 묶음
+const { KIND_GROUP, GROUPS } = SUBJECT;
 
 // ---------- 검색용 정규화 ----------
 // n: 띄어쓰기·문장 부호를 지우고 가운뎃점·마침표는 "·"로 통일 (3.1 = 3·1)
@@ -197,7 +194,10 @@ function rich(text, re) {
     .join("");
 }
 
-const topicLabel = (id) => `주제 ${pad(id)}`;
+// 주제 이름표: 한국사2는 "주제 05", 통합사회2는 "Ⅲ-2"처럼 데이터에 label이 있으면 그것을 쓴다
+const topicLabel = (id) => topicById.get(id).label || `주제 ${pad(id)}`;
+const topicShort = (id) => topicById.get(id).short || pad(id);
+const unitBadge = (u) => u.badge || `${SUBJECT.unitWord} ${u.id}`;
 const topicChip = (id) => `<a class="chip u${unitOf.get(id).id}" href="#study/${id}">${topicLabel(id)}</a>`;
 
 // "1919.3.1" → "3월 1일"
@@ -221,8 +221,8 @@ function shuffle(list) {
 
 // ---------- 저장 (이 기기에서만) ----------
 
-const DONE_KEY = "history2-done";
-const LAST_KEY = "history2-last";
+const DONE_KEY = `${SUBJECT.store}-done`;
+const LAST_KEY = `${SUBJECT.store}-last`;
 
 function load(key, fallback) {
   try {
@@ -298,15 +298,15 @@ function render() {
 // ---------- 단원 학습: 전체 목록 ----------
 
 function renderOverview() {
-  document.title = "한국사2 공부";
+  document.title = `${SUBJECT.name} 공부`;
   const last = topicById.get(load(LAST_KEY, 0));
   const stat = (n, label) => `<span><b>${n}</b>${label}</span>`;
   view.innerHTML = `
     <section class="welcome">
       <div>
-        <h2>한국사2, 주제 30개로 정리</h2>
-        <p>해냄에듀 『고등학교 한국사2』(2022 개정) 목차 순서로 핵심 정리·용어·연표·O/X를 모았어요. 궁금한 말은 위 검색창에 넣으면 전체에서 찾아 줘요.</p>
-        <div class="stats">${stat(TOPICS.length, "주제")}${stat(TERMS.length, "용어")}${stat(EVENTS.length, "연표")}${stat(OXS.length, "O/X")}</div>
+        <h2>${esc(SUBJECT.headline)}</h2>
+        <p>${esc(SUBJECT.blurb)}</p>
+        <div class="stats">${stat(TOPICS.length, SUBJECT.topicWord)}${stat(TERMS.length, "용어")}${stat(EVENTS.length, "연표")}${stat(OXS.length, "O/X")}</div>
       </div>
       ${last ? `<a class="btn primary" href="#study/${last.id}">이어서 공부하기<small>${topicLabel(last.id)} · ${esc(last.title)}</small></a>` : `<a class="btn primary" href="#study/1">처음부터 공부하기<small>${topicLabel(1)} · ${esc(TOPICS[0].title)}</small></a>`}
     </section>
@@ -315,7 +315,7 @@ function renderOverview() {
       return `
       <section class="unit-card u${u.id}">
         <header>
-          <span class="badge">대주제 ${u.id}</span>
+          <span class="badge">${esc(unitBadge(u))}</span>
           <h3>${esc(u.title)}</h3>
           <p>${esc(u.period)} · 완료 ${n}/${u.topics.length}</p>
         </header>
@@ -323,7 +323,7 @@ function renderOverview() {
           ${u.topics
             .map((id) => {
               const tp = topicById.get(id);
-              return `<li><a href="#study/${id}"><span class="n">${pad(id)}</span><span class="t">${esc(tp.title)}<small>${esc(tp.period)}</small></span>${done.has(id) ? '<span class="ck" aria-label="완료">✓</span>' : ""}</a></li>`;
+              return `<li><a href="#study/${id}"><span class="n">${esc(topicShort(id))}</span><span class="t">${esc(tp.title)}<small>${esc(tp.period)}</small></span>${done.has(id) ? '<span class="ck" aria-label="완료">✓</span>' : ""}</a></li>`;
             })
             .join("")}
         </ol>
@@ -335,7 +335,7 @@ function renderOverview() {
 
 function tocHTML(current) {
   return `
-    <aside class="toc" id="toc" aria-label="주제 목록">
+    <aside class="toc" id="toc" aria-label="${SUBJECT.topicWord} 목록">
       <div class="toc-head">
         <a href="#study">전체 목록</a>
         <button type="button" class="toc-close" data-action="toc-close">닫기</button>
@@ -343,13 +343,13 @@ function tocHTML(current) {
       ${UNITS.map(
         (u) => `
         <div class="toc-unit u${u.id}">
-          <p>대주제 ${u.id} · ${esc(u.title)}</p>
+          <p>${esc(unitBadge(u))} · ${esc(u.title)}</p>
           <ol>
             ${u.topics
               .map((id) => {
                 const cur = id === current ? ' aria-current="page"' : "";
                 const ck = done.has(id) ? '<span class="ck">✓</span>' : "";
-                return `<li><a href="#study/${id}"${cur}><span class="n">${pad(id)}</span><span class="t">${esc(topicById.get(id).title)}</span>${ck}</a></li>`;
+                return `<li><a href="#study/${id}"${cur}><span class="n">${esc(topicShort(id))}</span><span class="t">${esc(topicById.get(id).title)}</span>${ck}</a></li>`;
               })
               .join("")}
           </ol>
@@ -386,7 +386,7 @@ function renderTopic(id, hl) {
   const next = TOPICS[i + 1];
   save(LAST_KEY, id);
   if (noteTopic() !== null && noteTopic() !== id) openTopicNote(id);
-  document.title = `${topicLabel(id)} ${tp.title} · 한국사2`;
+  document.title = `${topicLabel(id)} ${tp.title} · ${SUBJECT.name}`;
   const terms = TERMS.filter((x) => x.topic === id);
   const events = EVENTS.filter((e) => e.topic === id);
   const oxs = OXS.filter((o) => o.topic === id);
@@ -397,11 +397,11 @@ function renderTopic(id, hl) {
       <article class="topic u${u.id}">
         <header class="topic-head">
           <div class="topic-tools">
-            <button type="button" class="toc-open" data-action="toc-open">☰ 주제 목록</button>
+            <button type="button" class="toc-open" data-action="toc-open">☰ ${SUBJECT.topicWord} 목록</button>
             <button type="button" class="note-btn" data-action="note" data-id="${id}">✏️ 필기 노트</button>
             <button type="button" class="ann-btn" data-action="annotate" aria-pressed="false">✍️ 본문에 필기</button>
           </div>
-          <p class="crumb"><span class="badge">대주제 ${u.id}</span>${esc(u.title)}</p>
+          <p class="crumb"><span class="badge">${esc(unitBadge(u))}</span>${esc(u.title)}</p>
           <h2><span class="num">${topicLabel(id)}</span>${esc(tp.title)}</h2>
           <p class="period">${esc(tp.period)}</p>
           <p class="intro">${mark(tp.intro, hl)}</p>
@@ -412,6 +412,7 @@ function renderTopic(id, hl) {
           ${tp.sections
             .map(
               (s, si) => `
+            ${s.sub ? `<p class="sub">${esc(s.sub)}</p>` : ""}
             <div class="sec">
               <h4>${esc(s.h)}</h4>
               <ul>${s.items.map((it, ii) => `<li data-key="n${id}-${si}-${ii}">${rich(it, hl)}</li>`).join("")}</ul>
@@ -420,12 +421,12 @@ function renderTopic(id, hl) {
             .join("")}
         </section>
 
-        <section class="block">
+        <section class="block"${terms.length ? "" : " hidden"}>
           <h3>핵심 용어 <small>${terms.length}개 · 누르면 자세히</small></h3>
           <div class="term-grid">${terms.map((x) => termCard(x, hl)).join("")}</div>
         </section>
 
-        <section class="block">
+        <section class="block"${events.length ? "" : " hidden"}>
           <h3>연표</h3>
           <ol class="mini-tl">
             ${events
@@ -436,7 +437,7 @@ function renderTopic(id, hl) {
           </ol>
         </section>
 
-        <section class="block">
+        <section class="block"${oxs.length ? "" : " hidden"}>
           <h3>헷갈리는 개념 O/X <small>먼저 골라 보고 해설을 확인하세요</small></h3>
           <div class="ox-list">${oxs.map((o) => oxCard(o, hl)).join("")}</div>
         </section>
@@ -456,32 +457,35 @@ function renderTopic(id, hl) {
 let tlUnit = 0; // 0이면 전체
 
 function renderTimeline() {
-  document.title = "연표 · 한국사2";
+  document.title = `연표 · ${SUBJECT.name}`;
   const list = EVENTS.filter((e) => !tlUnit || unitOf.get(e.topic).id === tlUnit);
   const years = new Map();
   for (const e of list) {
     if (!years.has(e.year)) years.set(e.year, []);
     years.get(e.year).push(e);
   }
-  const decades = [...new Set([...years.keys()].map((y) => Math.floor(y / 10) * 10))];
+  // 이동 단추: 10년 단위(기본) 또는 100년 단위(세기)
+  const step = SUBJECT.timelineStep || 10;
+  const decades = [...new Set([...years.keys()].map((y) => Math.floor(y / step) * step))];
+  const decadeName = (d) => (step === 100 ? `${d / 100 + 1}세기` : `${d}년대`);
   const firstOfDecade = new Set();
   view.innerHTML = `
     <section class="panel">
       <div class="panel-head">
         <h2>연표 <small>${list.length}개</small></h2>
-        <div class="chips" role="group" aria-label="대주제">
+        <div class="chips" role="group" aria-label="${SUBJECT.unitWord}">
           ${[0, ...UNITS.map((u) => u.id)]
-            .map((id) => `<button type="button" class="chipbtn${tlUnit === id ? " on" : ""}" data-action="tl-unit" data-unit="${id}">${id ? `대주제 ${id}` : "전체"}</button>`)
+            .map((id) => `<button type="button" class="chipbtn${tlUnit === id ? " on" : ""}" data-action="tl-unit" data-unit="${id}">${id ? esc(unitBadge(UNITS.find((u) => u.id === id))) : "전체"}</button>`)
             .join("")}
         </div>
         <div class="chips small" role="group" aria-label="연대로 이동">
-          ${decades.map((d) => `<button type="button" class="chipbtn" data-action="jump" data-target="dec-${d}">${d}년대</button>`).join("")}
+          ${decades.map((d) => `<button type="button" class="chipbtn" data-action="jump" data-target="dec-${d}">${decadeName(d)}</button>`).join("")}
         </div>
       </div>
       <ol class="tl">
         ${[...years]
           .map(([y, evs]) => {
-            const dec = Math.floor(y / 10) * 10;
+            const dec = Math.floor(y / step) * step;
             const anchor = firstOfDecade.has(dec) ? "" : ` id="dec-${dec}"`;
             firstOfDecade.add(dec);
             return `<li class="tl-year"${anchor}>
@@ -512,7 +516,7 @@ function initialOf(name) {
 }
 
 function renderTerms() {
-  document.title = "용어 사전 · 한국사2";
+  document.title = `용어 사전 · ${SUBJECT.name}`;
   const list = TERMS.filter((x) => (!termGroup || KIND_GROUP[x.k] === termGroup) && (!termUnit || unitOf.get(x.topic).id === termUnit)).sort(
     (a, b) => a.t.localeCompare(b.t, "ko"),
   );
@@ -532,9 +536,9 @@ function renderTerms() {
             .map((g) => `<button type="button" class="chipbtn${termGroup === g ? " on" : ""}" data-action="term-group" data-group="${g}">${g || "전체"}</button>`)
             .join("")}
         </div>
-        <div class="chips" role="group" aria-label="대주제">
+        <div class="chips" role="group" aria-label="${SUBJECT.unitWord}">
           ${[0, ...UNITS.map((u) => u.id)]
-            .map((id) => `<button type="button" class="chipbtn${termUnit === id ? " on" : ""}" data-action="term-unit" data-unit="${id}">${id ? `대주제 ${id}` : "모든 대주제"}</button>`)
+            .map((id) => `<button type="button" class="chipbtn${termUnit === id ? " on" : ""}" data-action="term-unit" data-unit="${id}">${id ? esc(unitBadge(UNITS.find((u) => u.id === id))) : `모든 ${SUBJECT.unitWord}`}</button>`)
             .join("")}
         </div>
         <div class="chips small" role="group" aria-label="첫 글자로 이동">
@@ -567,7 +571,7 @@ function renderTerms() {
 // ---------- 비교 정리 ----------
 
 function renderCompare(hl) {
-  document.title = "비교 정리 · 한국사2";
+  document.title = `비교 정리 · ${SUBJECT.name}`;
   view.innerHTML = `
     <section class="panel">
       <div class="panel-head">
@@ -601,7 +605,7 @@ function renderCompare(hl) {
 function noteSideHTML(tp) {
   const plain = (t) => esc(t).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
   return `<h3>${topicLabel(tp.id)} ${esc(tp.title)}</h3>
-    ${tp.sections.map((s) => `<h4>${esc(s.h)}</h4><ul>${s.items.map((it) => `<li>${plain(it)}</li>`).join("")}</ul>`).join("")}`;
+    ${tp.sections.map((s) => `${s.sub ? `<p class="sub">${esc(s.sub)}</p>` : ""}<h4>${esc(s.h)}</h4><ul>${s.items.map((it) => `<li>${plain(it)}</li>`).join("")}</ul>`).join("")}`;
 }
 
 function openTopicNote(id) {
@@ -612,7 +616,7 @@ function openTopicNote(id) {
 }
 
 async function renderNotes() {
-  document.title = "필기 노트 · 한국사2";
+  document.title = `필기 노트 · ${SUBJECT.name}`;
   const notes = (await listNotes()).sort((a, b) => b.updated - a.updated);
   if (route().tab !== "notes") return;
   view.innerHTML = `
@@ -620,7 +624,7 @@ async function renderNotes() {
       <div class="panel-head">
         <h2>필기 노트 <small>${notes.length}개 주제</small></h2>
         <p class="hint">주제 화면의 ‘✏️ 필기 노트’를 누르면 애플펜슬로 쓸 수 있어요. 노트는 이 기기에만 저장돼요.</p>
-        <div class="chips small">${TOPICS.map((tp) => `<button type="button" class="chipbtn" data-action="note" data-id="${tp.id}">${pad(tp.id)}</button>`).join("")}</div>
+        <div class="chips small">${TOPICS.map((tp) => `<button type="button" class="chipbtn" data-action="note" data-id="${tp.id}">${esc(topicShort(tp.id))}</button>`).join("")}</div>
       </div>
       ${notes.length ? `<ul class="note-list">${notes
         .map((n) => {
@@ -640,12 +644,12 @@ async function renderNotes() {
 // ---------- 자료실 ----------
 
 function renderLinks() {
-  document.title = "자료실 · 한국사2";
+  document.title = `자료실 · ${SUBJECT.name}`;
   view.innerHTML = `
     <section class="panel">
       <div class="panel-head">
         <h2>자료실 <small>더 깊이 공부할 때</small></h2>
-        <p class="hint">용어 카드의 ‘백과사전에서 더 보기’를 누르면 한국민족문화대백과사전 검색 결과로 바로 가요.</p>
+        <p class="hint">${esc(SUBJECT.linksHint)}</p>
       </div>
       <ul class="links">
         ${LINKS.map((l) => `<li><a href="${esc(l.url)}" target="_blank" rel="noopener"><b>${esc(l.name)} ↗</b><span>${esc(l.d)}</span></a></li>`).join("")}
@@ -741,7 +745,7 @@ function startQuiz(retryWrong) {
 }
 
 function renderQuiz() {
-  document.title = "퀴즈 · 한국사2";
+  document.title = `퀴즈 · ${SUBJECT.name}`;
   if (quiz.state === "play") return renderQuizQuestion();
   if (quiz.state === "result") return renderQuizResult();
 
@@ -761,8 +765,8 @@ function renderQuiz() {
       <div class="quiz-opts">
         <label>범위
           <select data-action="quiz-scope">
-            <option value="all"${quiz.scope === "all" ? " selected" : ""}>전체 (주제 01~30)</option>
-            ${UNITS.map((u) => `<option value="u${u.id}"${quiz.scope === `u${u.id}` ? " selected" : ""}>대주제 ${u.id} · ${esc(u.title)}</option>`).join("")}
+            <option value="all"${quiz.scope === "all" ? " selected" : ""}>전체 (${topicLabel(TOPICS[0].id)}~${topicShort(TOPICS[TOPICS.length - 1].id)})</option>
+            ${UNITS.map((u) => `<option value="u${u.id}"${quiz.scope === `u${u.id}` ? " selected" : ""}>${esc(unitBadge(u))} · ${esc(u.title)}</option>`).join("")}
             ${TOPICS.map((tp) => `<option value="t${tp.id}"${quiz.scope === `t${tp.id}` ? " selected" : ""}>${topicLabel(tp.id)} · ${esc(tp.title)}</option>`).join("")}
           </select>
         </label>
@@ -893,7 +897,7 @@ function hitHTML(h, re) {
     const tp = topicById.get(it.topic);
     return `<button type="button" class="hit" data-href="#study/${tp.id}">
       <span class="hit-title">${topicLabel(tp.id)} · ${mark(tp.title, re)}</span>
-      <span class="hit-meta">대주제 ${unitOf.get(tp.id).id} · ${esc(tp.period)}</span>
+      <span class="hit-meta">${esc(unitBadge(unitOf.get(tp.id)))} · ${esc(tp.period)}</span>
       <span class="hit-body">${mark(tp.intro, re)}</span>
     </button>`;
   }
@@ -925,7 +929,7 @@ function hitHTML(h, re) {
 function suggestHTML() {
   return `<div class="res-head"><p>이런 키워드로 찾아보세요</p><button type="button" class="link" data-action="close-search">닫기</button></div>
     <div class="chips">${SUGGEST.map((s) => `<button type="button" class="chipbtn" data-action="suggest" data-q="${esc(s)}">${esc(s)}</button>`).join("")}</div>
-    <p class="hint">띄어쓰기·가운뎃점은 달라도 괜찮아요 (3.1운동 = 3·1 운동). 초성으로도 찾을 수 있어요 (ㅅㄱㅎ → 신간회).</p>`;
+    <p class="hint">${esc(SUBJECT.searchHint)}</p>`;
 }
 
 function renderResults() {
@@ -1012,7 +1016,7 @@ function openSheet(key) {
   topicLink.href = `#study/${tp.id}`;
   topicLink.dataset.focus = x.key;
   topicLink.textContent = `${topicLabel(tp.id)} · ${tp.title}에서 보기`;
-  $("sheet-web").href = `https://encykorea.aks.ac.kr/Article/Search?query=${encodeURIComponent(x.t.replace(/\(.*?\)/g, "").trim())}`;
+  $("sheet-web").href = SUBJECT.webSearch(x.t.replace(/\(.*?\)/g, "").trim());
   sheet.hidden = false;
   document.body.classList.add("sheet-open");
   $("sheet-close").focus();

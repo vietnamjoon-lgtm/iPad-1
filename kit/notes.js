@@ -21,12 +21,19 @@ const FINGER_KEY = "history2-note-finger"; // "on" | "off" (펜슬을 한 번 �
 // ---------- 저장소 (IndexedDB, 안 되면 메모리) ----------
 
 const memory = new Map();
+// 과목마다 노트 저장소를 따로 쓴다 (한국사2: "history2-notes")
+let storeName = "history2";
+let subjectName = "한국사2";
+export function setStore(name, label) {
+  storeName = name;
+  subjectName = label;
+}
 let dbPromise = null;
 
 function db() {
   if (!dbPromise) {
     dbPromise = new Promise((resolve, reject) => {
-      const req = indexedDB.open("history2-notes", 1);
+      const req = indexedDB.open(`${storeName}-notes`, 1);
       req.onupgradeneeded = () => req.result.createObjectStore("notes");
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
@@ -773,7 +780,7 @@ function eraseAt([x, y]) {
 
 function exportPage() {
   const canvas = renderPage(strokes(), 2000, true);
-  const name = `한국사2_${el.querySelector(".note-title").textContent.split(" · ")[0].replace(/\s/g, "")}_${pageIndex + 1}쪽.png`;
+  const name = `${subjectName.replace(/\s/g, "")}_${el.querySelector(".note-title").textContent.split(" · ")[0].replace(/\s/g, "")}_${pageIndex + 1}쪽.png`;
   canvas.toBlob(async (blob) => {
     if (!blob) return;
     const file = new File([blob], name, { type: "image/png" });

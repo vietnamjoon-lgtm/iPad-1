@@ -70,6 +70,31 @@ mark {
 .u1 { --u: var(--u1); --u-soft: var(--u1-soft); }
 .u2 { --u: var(--u2); --u-soft: var(--u2-soft); }
 .u3 { --u: var(--u3); --u-soft: var(--u3-soft); }
+.u4 { --u: var(--u4); --u-soft: var(--u4-soft); }
+.u5 { --u: var(--u5); --u-soft: var(--u5-soft); }
+
+/* 통합사회2: 창비 교과서 대단원 색(Ⅰ 보라, Ⅱ 주황, Ⅲ 빨강, Ⅳ 초록, Ⅴ 청록) */
+[data-subject="society"] {
+  --u1: #6b3fa0;
+  --u1-soft: rgba(107, 63, 160, 0.1);
+  --u2: #b85c00;
+  --u2-soft: rgba(229, 122, 0, 0.12);
+  --u3: #c23b1d;
+  --u3-soft: rgba(214, 69, 42, 0.1);
+  --u4: #0b7d54;
+  --u4-soft: rgba(15, 138, 95, 0.11);
+  --u5: #067a8e;
+  --u5-soft: rgba(10, 143, 166, 0.11);
+}
+
+/* 이름표가 "Ⅲ-2"처럼 길 때 */
+[data-subject="society"] .toc-unit .n {
+  width: 30px;
+}
+
+[data-subject="society"] .topic-list .n {
+  font-size: 14px;
+}
 
 .page {
   max-width: 1180px;
@@ -779,6 +804,21 @@ tr.flash {
 
 .sec + .sec {
   margin-top: 18px;
+}
+
+/* 소단원 이름(① ②) */
+.sub {
+  margin: 22px 0 10px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--u-soft);
+  color: var(--u);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.block > h3 + .sub {
+  margin-top: 4px;
 }
 
 .sec h4 {
