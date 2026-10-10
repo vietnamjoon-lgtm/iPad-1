@@ -673,13 +673,39 @@ const QUIZ_MODES = {
   term: { name: "용어 맞히기", desc: "설명을 읽고 알맞은 용어를 4개 중에서 골라요" },
   ox: { name: "O/X 오개념 체크", desc: "헷갈리기 쉬운 문장이 맞는지 틀리는지 골라요" },
   order: { name: "시대 순서 맞히기", desc: "사건 4개를 일어난 순서대로 눌러요" },
+  ai: { name: "✨ AI 문제 (계속)", desc: "제미나이가 고른 주제의 내용으로 새 문제를 끝없이 만들어요" },
 };
-const quiz = { mode: "term", scope: "all", count: 10, items: [], i: 0, score: 0, wrong: [], state: "setup", picked: [] };
+const quiz = { mode: "term", count: 10, items: [], i: 0, score: 0, wrong: [], state: "setup", picked: [], loading: false, error: "", endless: false };
 
-function scopeTopics(scope) {
-  if (scope === "all") return null;
-  if (scope.startsWith("u")) return new Set(UNITS.find((u) => `u${u.id}` === scope).topics);
-  return new Set([Number(scope.slice(1))]);
+// ---------- 퀴즈 범위: 고른 주제에서만 낸다 (아무것도 안 고르면 전체) ----------
+
+const SCOPE_KEY = `${SUBJECT.store}-quiz-topics`;
+const quizTopics = new Set(load(SCOPE_KEY, []).filter((id) => topicById.has(id)));
+const saveScope = () => save(SCOPE_KEY, [...quizTopics]);
+const scopeTopics = () => (quizTopics.size ? quizTopics : null);
+
+function scopeHTML() {
+  const all = !quizTopics.size;
+  return `
+    <div class="scope">
+      <div class="scope-head">
+        <b>범위</b>
+        <span>${all ? "전체에서 나와요. 원하는 주제를 눌러 고르세요." : `고른 ${quizTopics.size}개 주제에서만 나와요.`}</span>
+        ${all ? "" : '<button type="button" class="link" data-action="scope-clear">모두 해제</button>'}
+      </div>
+      ${UNITS.map((u) => {
+        const allOn = u.topics.every((id) => quizTopics.has(id));
+        return `<div class="scope-unit u${u.id}">
+          <button type="button" class="scope-u${allOn ? " on" : ""}" data-action="scope-unit" data-unit="${u.id}" aria-pressed="${allOn}">${esc(unitBadge(u))} ${esc(u.title)}</button>
+          <div class="scope-topics">${u.topics
+            .map((id) => {
+              const on = quizTopics.has(id);
+              return `<button type="button" class="scope-t${on ? " on" : ""}" data-action="scope-topic" data-id="${id}" aria-pressed="${on}"><span>${esc(topicShort(id))}</span>${esc(topicById.get(id).title)}</button>`;
+            })
+            .join("")}</div>
+        </div>`;
+      }).join("")}
+    </div>`;
 }
 
 // 시대 순서 문제: 연도가 모두 다른 사건 4개씩 묶는다
@@ -726,17 +752,25 @@ function maskTerm(text, x) {
 }
 
 function quizPool() {
-  const only = scopeTopics(quiz.scope);
+  const only = scopeTopics();
   const inScope = (id) => !only || only.has(id);
   if (quiz.mode === "term") return TERMS.filter((x) => inScope(x.topic));
   if (quiz.mode === "ox") return OXS.filter((o) => inScope(o.topic));
+  if (quiz.mode === "ai") return TOPICS.filter((tp) => inScope(tp.id));
   return EVENTS.filter((e) => inScope(e.topic));
 }
 
 function startQuiz(retryWrong) {
   const pool = quizPool();
+  quiz.endless = false;
+  quiz.error = "";
   if (retryWrong && quiz.wrong.length && quiz.mode !== "order") {
     quiz.items = shuffle(quiz.wrong.map((w) => w.item));
+  } else if (quiz.mode === "ai") {
+    if (!geminiKey()) return renderQuiz();
+    quiz.items = [];
+    quiz.endless = true;
+    quiz.seen = loadSeen();
   } else if (quiz.mode === "term") {
     quiz.items = shuffle(pool).slice(0, quiz.count).map((x) => termQuestion(x, pool));
   } else if (quiz.mode === "ox") {
@@ -745,13 +779,16 @@ function startQuiz(retryWrong) {
     quiz.items = orderSets(pool, quiz.count);
   }
   if (quiz.mode === "term" && retryWrong) quiz.items = quiz.items.map((q) => termQuestion(q.term, pool));
+  if (quiz.mode === "ai" && retryWrong) quiz.items = quiz.items.map((q) => (q.type === "choice" ? { ...q, choices: shuffle(q.choices) } : { ...q }));
   quiz.i = 0;
   quiz.score = 0;
+  quiz.answered = 0;
   quiz.wrong = [];
   quiz.picked = [];
-  quiz.state = quiz.items.length ? "play" : "setup";
+  quiz.state = quiz.items.length || quiz.endless ? "play" : "setup";
   renderQuiz();
   window.scrollTo(0, 0);
+  if (quiz.endless) fillAI();
 }
 
 function renderQuiz() {
@@ -760,42 +797,79 @@ function renderQuiz() {
   if (quiz.state === "result") return renderQuizResult();
 
   const pool = quizPool();
-  const available = quiz.mode === "order" ? orderSets(pool, quiz.count).length : Math.min(pool.length, quiz.count);
+  const ai = quiz.mode === "ai";
+  const available = ai ? (pool.length && geminiKey() ? 1 : 0) : quiz.mode === "order" ? orderSets(pool, quiz.count).length : Math.min(pool.length, quiz.count);
+  const hint = ai
+    ? geminiKey()
+      ? "고른 주제의 핵심 정리만 근거로 문제를 5개씩 계속 만들어요. 서답형은 제미나이가 채점해 줘요. 그만하고 싶을 때 ‘그만하기’를 누르세요."
+      : "먼저 아래에 제미나이 API 키를 넣어 주세요."
+    : available
+      ? `이 범위에서 ${available}문제를 낼 수 있어요.`
+      : "이 범위로는 문제를 만들 수 없어요. 범위를 넓혀 주세요.";
   view.innerHTML = `
     <section class="panel quiz-setup">
-      <div class="panel-head"><h2>퀴즈 <small>한 번에 ${quiz.count}문제</small></h2></div>
+      <div class="panel-head"><h2>퀴즈 <small>${ai ? "끝없이" : `한 번에 ${quiz.count}문제`}</small></h2></div>
       <div class="mode-grid" role="radiogroup" aria-label="퀴즈 종류">
         ${Object.entries(QUIZ_MODES)
           .map(
-            ([k, m]) => `<button type="button" role="radio" aria-checked="${quiz.mode === k}" class="mode${quiz.mode === k ? " on" : ""}" data-action="quiz-mode" data-mode="${k}">
+            ([k, m]) => `<button type="button" role="radio" aria-checked="${quiz.mode === k}" class="mode${quiz.mode === k ? " on" : ""}${k === "ai" ? " mode-ai" : ""}" data-action="quiz-mode" data-mode="${k}">
               <b>${m.name}</b><span>${m.desc}</span></button>`,
           )
           .join("")}
       </div>
-      <div class="quiz-opts">
-        <label>범위
-          <select data-action="quiz-scope">
-            <option value="all"${quiz.scope === "all" ? " selected" : ""}>전체 (${topicLabel(TOPICS[0].id)}~${topicShort(TOPICS[TOPICS.length - 1].id)})</option>
-            ${UNITS.map((u) => `<option value="u${u.id}"${quiz.scope === `u${u.id}` ? " selected" : ""}>${esc(unitBadge(u))} · ${esc(u.title)}</option>`).join("")}
-            ${TOPICS.map((tp) => `<option value="t${tp.id}"${quiz.scope === `t${tp.id}` ? " selected" : ""}>${topicLabel(tp.id)} · ${esc(tp.title)}</option>`).join("")}
-          </select>
-        </label>
+      ${ai ? aiSettingsHTML() : ""}
+      ${scopeHTML()}
+      ${ai ? "" : `<div class="quiz-opts">
         <label>문제 수
           <select data-action="quiz-count">
             ${[5, 10, 20, 30].map((n) => `<option value="${n}"${quiz.count === n ? " selected" : ""}>${n}문제</option>`).join("")}
           </select>
         </label>
-      </div>
-      <p class="hint">${available ? `이 범위에서 ${available}문제를 낼 수 있어요.` : "이 범위로는 문제를 만들 수 없어요. 범위를 넓혀 주세요."}</p>
-      <button type="button" class="btn primary big" data-action="quiz-start"${available ? "" : " disabled"}>시작하기</button>
+      </div>`}
+      <p class="hint">${hint}</p>
+      <button type="button" class="btn primary big" data-action="quiz-start"${available ? "" : " disabled"}>${ai ? "✨ AI 문제 시작" : "시작하기"}</button>
     </section>`;
+}
+
+function quizHead() {
+  const total = quiz.endless ? `${quiz.i + 1}번째 문제` : `${quiz.i + 1} / ${quiz.items.length}`;
+  return `<div class="quiz-top"><span>${QUIZ_MODES[quiz.mode].name}</span><span>${total} · 맞힌 개수 ${fmtScore(quiz.score)}</span><button type="button" class="link" data-action="quiz-quit">그만하기</button></div>`;
 }
 
 function renderQuizQuestion() {
   const q = quiz.items[quiz.i];
-  const head = `<div class="quiz-top"><span>${QUIZ_MODES[quiz.mode].name}</span><span>${quiz.i + 1} / ${quiz.items.length} · 맞힌 개수 ${quiz.score}</span><button type="button" class="link" data-action="quiz-quit">그만하기</button></div>`;
+  if (!q) {
+    // AI 문제를 기다리는 중이거나 오류
+    view.innerHTML = `<section class="panel quiz-play">${quizHead()}
+      ${quiz.error
+        ? `<div class="ai-error"><p>${esc(quiz.error)}</p><div class="order-btns"><button type="button" class="btn primary" data-action="ai-retry">다시 시도</button><button type="button" class="btn" data-action="ai-settings">설정 보기</button></div></div>`
+        : `<div class="ai-loading"><span class="spinner" aria-hidden="true"></span><p>제미나이가 고른 주제로 문제를 만들고 있어요…</p></div>`}
+    </section>`;
+    return;
+  }
   let body = "";
-  if (quiz.mode === "term") {
+  if (quiz.mode === "ai") {
+    const where = `${esc(topicLabel(q.topic))} · ${esc(topicById.get(q.topic).title)}`;
+    if (q.type === "choice") {
+      body = `<p class="qlead"><span class="qtype">객관식</span>${where}</p>
+        <blockquote class="qtext">${esc(q.question)}</blockquote>
+        <div class="opts">${q.choices.map((c, k) => `<button type="button" class="opt" data-action="quiz-pick" data-key="${k}">${esc(c)}</button>`).join("")}</div>`;
+    } else {
+      const short = q.type === "short";
+      body = `<p class="qlead"><span class="qtype">${short ? "단답형" : "서술형"}</span>${where}</p>
+        <blockquote class="qtext">${esc(q.question)}</blockquote>
+        <form class="written" data-written>
+          ${short
+            ? `<input id="written-answer" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="답을 써 보세요" aria-label="답" />`
+            : `<textarea id="written-answer" rows="4" placeholder="1~3문장으로 써 보세요. 애플펜슬로 손글씨를 써도 글자로 바뀌어요." aria-label="답"></textarea>`}
+          <p class="written-status" id="written-status" hidden></p>
+          <div class="order-btns">
+            <button type="button" class="btn" data-action="written-giveup">모르겠어요</button>
+            <button type="submit" class="btn primary">채점하기</button>
+          </div>
+        </form>`;
+    }
+  } else if (quiz.mode === "term") {
     body = `<p class="qlead">다음 설명에 알맞은 것은?</p>
       <blockquote class="qtext">${esc(maskTerm(q.term.d, q.term))}</blockquote>
       <div class="opts">${q.options.map((x) => `<button type="button" class="opt" data-action="quiz-pick" data-key="${x.key}">${esc(x.t)}</button>`).join("")}</div>`;
@@ -819,26 +893,43 @@ function renderQuizQuestion() {
         <button type="button" class="btn primary" data-action="quiz-order-check"${quiz.picked.length === 4 ? "" : " disabled"}>확인</button>
       </div>`;
   }
-  view.innerHTML = `<section class="panel quiz-play">${head}${body}<div id="quiz-feedback" class="feedback" hidden></div></section>`;
+  view.innerHTML = `<section class="panel quiz-play">${quizHead()}${body}<div id="quiz-feedback" class="feedback" hidden></div></section>`;
 }
 
+// correct: true(정답) | false(오답) | 0.5(부분 정답, 반 개로 센다)
 function answerQuiz(correct, detailHTML, item) {
-  if (correct) quiz.score++;
-  else quiz.wrong.push({ item, detailHTML });
+  quiz.answered = (quiz.answered || 0) + 1;
+  if (correct === true) quiz.score++;
+  else {
+    if (correct === 0.5) quiz.score += 0.5;
+    quiz.wrong.push({ item, detailHTML });
+  }
   const fb = $("quiz-feedback");
-  const last = quiz.i === quiz.items.length - 1;
-  fb.className = `feedback ${correct ? "right" : "wrong"}`;
-  fb.innerHTML = `<p class="verdict">${correct ? "정답!" : "아쉬워요"}</p>${detailHTML}
+  const last = !quiz.endless && quiz.i === quiz.items.length - 1;
+  fb.className = `feedback ${correct === true ? "right" : correct === 0.5 ? "partial" : "wrong"}`;
+  fb.innerHTML = `<p class="verdict">${correct === true ? "정답!" : correct === 0.5 ? "부분 정답" : "아쉬워요"}</p>${detailHTML}
     <button type="button" class="btn primary" data-action="quiz-next">${last ? "결과 보기" : "다음 문제 →"}</button>`;
   fb.hidden = false;
-  for (const b of view.querySelectorAll(".opt, .ord, [data-action^='quiz-order']")) b.disabled = true;
+  for (const b of view.querySelectorAll(".opt, .ord, [data-action^='quiz-order'], .written button, .written input, .written textarea")) b.disabled = true;
   fb.querySelector("[data-action='quiz-next']").focus({ preventScroll: true });
   fb.scrollIntoView({ block: "nearest" });
 }
 
 function pickQuiz(key, button) {
   const q = quiz.items[quiz.i];
-  if (quiz.mode === "term") {
+  if (quiz.mode === "ai" && q.type === "choice") {
+    const k = Number(key);
+    const correct = q.choices[k] === q.answer;
+    for (const b of view.querySelectorAll(".opt")) {
+      if (q.choices[Number(b.dataset.key)] === q.answer) b.classList.add("right");
+      else if (b === button) b.classList.add("wrong");
+    }
+    answerQuiz(
+      correct,
+      `<p class="ai-q">${esc(q.question)}</p><p>정답: <b>${esc(q.answer)}</b></p><p>${esc(q.explanation)}</p><p>${topicChip(q.topic)} ${esc(topicById.get(q.topic).title)} <small class="ai-tag">AI가 만든 문제</small></p>`,
+      q,
+    );
+  } else if (quiz.mode === "term") {
     const correct = key === q.term.key;
     for (const b of view.querySelectorAll(".opt")) {
       if (b.dataset.key === q.term.key) b.classList.add("right");
@@ -859,6 +950,51 @@ function pickQuiz(key, button) {
   }
 }
 
+// ---------- 서답형 채점 ----------
+
+function writtenDetail(q, mine, feedback) {
+  return `<p class="ai-q">${esc(q.question)}</p>
+    <p>내 답: <b>${mine ? esc(mine) : "(모르겠어요)"}</b></p>
+    ${feedback ? `<p class="ai-fb">${esc(feedback)}</p>` : ""}
+    <p>${q.type === "short" ? "정답" : "모범 답안"}: <b>${esc(q.answer)}</b>${q.accept?.length ? ` <small>(${esc(q.accept.join(", "))}도 정답)</small>` : ""}</p>
+    ${q.points?.length ? `<ul class="ai-points">${q.points.map((pt) => `<li>${esc(pt)}</li>`).join("")}</ul>` : ""}
+    <p>${esc(q.explanation)}</p>
+    <p>${topicChip(q.topic)} ${esc(topicById.get(q.topic).title)} <small class="ai-tag">AI가 만든 문제${mine && feedback ? " · AI 채점" : ""}</small></p>`;
+}
+
+async function gradeWritten(mine) {
+  const q = quiz.items[quiz.i];
+  const status = $("written-status");
+  const form = view.querySelector("[data-written]");
+  if (!mine) return answerQuiz(false, writtenDetail(q, "", ""), q);
+  // 단답형은 정답과 똑같으면 바로 맞힌 것으로 본다
+  if (q.type === "short" && [q.answer, ...q.accept].some((a) => norm2(a) === norm2(mine))) return answerQuiz(true, writtenDetail(q, mine, ""), q);
+  for (const el of form.querySelectorAll("button, input, textarea")) el.disabled = true;
+  status.hidden = false;
+  status.className = "written-status";
+  status.textContent = "제미나이가 채점하고 있어요…";
+  try {
+    let out;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        out = await askGemini(gradePrompt(q, mine), GRADE_SCHEMA, 0);
+        break;
+      } catch (err) {
+        if (!err.retry || attempt === 2) throw err;
+        await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+      }
+    }
+    if (quiz.items[quiz.i] !== q) return;
+    const verdict = out?.result === "정답" ? true : out?.result === "부분 정답" ? 0.5 : false;
+    answerQuiz(verdict, writtenDetail(q, mine, out?.feedback || ""), q);
+  } catch (err) {
+    if (quiz.items[quiz.i] !== q) return;
+    for (const el of form.querySelectorAll("button, input, textarea")) el.disabled = false;
+    status.className = "written-status error";
+    status.textContent = `채점하지 못했어요: ${err.message || err} ‘채점하기’를 다시 눌러 주세요.`;
+  }
+}
+
 function checkOrder() {
   const q = quiz.items[quiz.i];
   const right = [...q.events].sort((a, b) => a.sort - b.sort);
@@ -870,20 +1006,311 @@ function checkOrder() {
   );
 }
 
+function nextQuiz() {
+  quiz.i++;
+  quiz.picked = [];
+  if (!quiz.endless && quiz.i >= quiz.items.length) quiz.state = "result";
+  renderQuiz();
+  window.scrollTo(0, 0);
+  if (quiz.endless) fillAI();
+}
+
+function endQuiz() {
+  if (quiz.state === "play" && (quiz.answered || 0) > 0) {
+    // 푼 문제까지만 결과로 보여 준다
+    quiz.endless = false;
+    quiz.state = "result";
+  } else {
+    quiz.state = "setup";
+    quiz.endless = false;
+  }
+  renderQuiz();
+  window.scrollTo(0, 0);
+}
+
 function renderQuizResult() {
-  const total = quiz.items.length;
+  const total = quiz.answered || quiz.items.length;
   const pct = Math.round((quiz.score / total) * 100);
+  const shown = fmtScore(quiz.score);
+  const retry = quiz.wrong.length && quiz.mode !== "order";
   view.innerHTML = `
     <section class="panel quiz-result">
-      <h2>${quiz.score} / ${total} <small>${pct}점</small></h2>
+      <h2>${shown} / ${total} <small>${pct}점</small></h2>
       <p>${pct === 100 ? "완벽해요! 다른 범위도 도전해 보세요." : pct >= 70 ? "잘했어요. 틀린 것만 다시 확인해 봐요." : "틀린 문제의 주제를 다시 읽고 도전해 봐요."}</p>
       ${quiz.wrong.length ? `<h3>틀린 문제</h3><ul class="wrong-list">${quiz.wrong.map((w) => `<li>${w.detailHTML}</li>`).join("")}</ul>` : ""}
       <div class="result-btns">
-        ${quiz.wrong.length && quiz.mode !== "order" ? '<button type="button" class="btn primary" data-action="quiz-retry">틀린 것만 다시</button>' : ""}
-        <button type="button" class="btn${quiz.wrong.length && quiz.mode !== "order" ? "" : " primary"}" data-action="quiz-start">새 문제로 다시</button>
+        ${retry ? '<button type="button" class="btn primary" data-action="quiz-retry">틀린 것만 다시</button>' : ""}
+        <button type="button" class="btn${retry ? "" : " primary"}" data-action="quiz-start">${quiz.mode === "ai" ? "✨ 새 AI 문제 계속" : "새 문제로 다시"}</button>
         <button type="button" class="btn" data-action="quiz-quit">설정 바꾸기</button>
       </div>
     </section>`;
+}
+
+// ---------- AI 문제 (제미나이) ----------
+// 키는 이 기기 브라우저에만 저장하고 구글 제미나이 API로만 보낸다. 저장소(공개)에는 절대 넣지 않는다.
+
+const GEMINI_KEY = "gemini-api-key";
+const GEMINI_MODEL_KEY = "gemini-model";
+const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite"];
+const AI_BATCH = 5;
+const fmtScore = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+
+// 문제 유형: 객관식(4지선다) · 단답형(낱말·짧은 구) · 서술형(1~3문장, AI가 채점)
+const AI_TYPES = {
+  mix: { name: "섞어서 (객관식 3 + 단답형 1 + 서술형 1)", plan: "객관식(choice) 3개, 단답형(short) 1개, 서술형(essay) 1개" },
+  choice: { name: "객관식만 (4지선다)", plan: "객관식(choice) 5개" },
+  written: { name: "서답형만 (단답형 3 + 서술형 2)", plan: "단답형(short) 3개, 서술형(essay) 2개" },
+  short: { name: "단답형만", plan: "단답형(short) 5개" },
+  essay: { name: "서술형만", plan: "서술형(essay) 5개" },
+};
+const AI_QTYPE_KEY = "gemini-qtype";
+function aiQType() {
+  try {
+    const v = localStorage.getItem(AI_QTYPE_KEY);
+    return AI_TYPES[v] ? v : "mix";
+  } catch {
+    return "mix";
+  }
+}
+
+// 낸 문제 기록: 과목별로 최근 300개를 기기에 저장해 다시 시작해도 겹치지 않게 한다
+const SEEN_KEY = `${SUBJECT.store}-ai-seen`;
+const loadSeen = () => load(SEEN_KEY, []).filter((x) => typeof x === "string");
+function rememberSeen(question) {
+  quiz.seen.push(question);
+  if (quiz.seen.length > 300) quiz.seen = quiz.seen.slice(-300);
+  save(SEEN_KEY, quiz.seen);
+}
+
+function geminiKey() {
+  try {
+    return localStorage.getItem(GEMINI_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+function geminiModel() {
+  try {
+    return localStorage.getItem(GEMINI_MODEL_KEY) || GEMINI_MODELS[0];
+  } catch {
+    return GEMINI_MODELS[0];
+  }
+}
+
+function aiSettingsHTML() {
+  const key = geminiKey();
+  const model = geminiModel();
+  return `
+    <div class="ai-settings" id="ai-settings">
+      <p class="ai-title">제미나이 설정</p>
+      ${key
+        ? `<p class="ai-key-ok">✓ API 키가 이 기기에 저장되어 있어요 <code>${esc(key.slice(0, 4))}…${esc(key.slice(-4))}</code>
+            <button type="button" class="link" data-action="ai-key-change">바꾸기</button>
+            <button type="button" class="link" data-action="ai-key-clear">지우기</button></p>`
+        : ""}
+      <form class="ai-key-form" data-ai-form${key ? " hidden" : ""}>
+        <input type="password" id="ai-key" placeholder="제미나이 API 키 붙여넣기 (AIza…)" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="제미나이 API 키" />
+        <button type="submit" class="btn primary">저장</button>
+      </form>
+      <label class="ai-model">문제 유형
+        <select data-action="ai-qtype">
+          ${Object.entries(AI_TYPES).map(([k, v]) => `<option value="${k}"${k === aiQType() ? " selected" : ""}>${v.name}</option>`).join("")}
+        </select>
+      </label>
+      <label class="ai-model">모델
+        <select data-action="ai-model">
+          ${[...new Set([...GEMINI_MODELS, model])].map((m) => `<option value="${esc(m)}"${m === model ? " selected" : ""}>${esc(m)}${m === GEMINI_MODELS[0] ? " (기본)" : m.endsWith("lite") ? " (더 빠름)" : ""}</option>`).join("")}
+        </select>
+      </label>
+      <p class="ai-note">키는 이 기기의 브라우저에만 저장되고 구글 제미나이 서버로만 보내져요. 여러 사람이 같이 쓰는 기기에서는 저장하지 마세요. 키는 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio ↗</a>에서 확인할 수 있어요.</p>
+    </div>`;
+}
+
+// 고른 주제에서 핵심 정리 몇 묶음을 골라 문제의 근거로 보낸다 (매번 다른 부분을 골라 문제가 다양해진다)
+function aiMaterial() {
+  const topics = quizPool();
+  const chunks = [];
+  for (const tp of topics) {
+    tp.sections.forEach((s) => {
+      const text = s.items.map((it) => `- ${it.replace(/\*\*/g, "")}`).join("\n");
+      chunks.push({ tp, text: `### ${topicLabel(tp.id)} ${tp.title} > ${s.sub ? `${s.sub} > ` : ""}${s.h}\n${text}` });
+    });
+  }
+  const picked = [];
+  let size = 0;
+  for (const c of shuffle(chunks)) {
+    if (size > 5000 && picked.length >= 2) break;
+    picked.push(c);
+    size += c.text.length;
+  }
+  // 고른 부분의 주제 용어 설명도 함께 보낸다
+  const ids = new Set(picked.map((c) => c.tp.id));
+  const terms = shuffle(TERMS.filter((x) => ids.has(x.topic)))
+    .slice(0, 25)
+    .map((x) => `- ${x.t}: ${x.d}`)
+    .join("\n");
+  return { text: `${picked.map((c) => c.text).join("\n\n")}\n\n### 관련 용어\n${terms}`, ids };
+}
+
+const AI_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    questions: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          type: { type: "STRING", enum: ["choice", "short", "essay"] },
+          topic: { type: "STRING" },
+          question: { type: "STRING" },
+          choices: { type: "ARRAY", items: { type: "STRING" } },
+          answer: { type: "STRING" },
+          accept: { type: "ARRAY", items: { type: "STRING" } },
+          points: { type: "ARRAY", items: { type: "STRING" } },
+          explanation: { type: "STRING" },
+        },
+        required: ["type", "topic", "question", "answer", "explanation"],
+      },
+    },
+  },
+  required: ["questions"],
+};
+
+const GRADE_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    result: { type: "STRING", enum: ["정답", "부분 정답", "오답"] },
+    feedback: { type: "STRING" },
+  },
+  required: ["result", "feedback"],
+};
+
+function aiPrompt(material) {
+  const seen = shuffle((quiz.seen || []).slice(-120)).slice(0, 40);
+  return `과목: ${SUBJECT.name} (대한민국 2022 개정 교육과정 고등학교)
+
+아래 [학습 자료]만 근거로 문제 ${AI_BATCH}개를 만들어 주세요. 구성: ${AI_TYPES[aiQType()].plan}.
+
+공통 규칙
+1. 문제·답·해설의 모든 내용은 [학습 자료]와 정확히 일치해야 합니다. 자료에 없는 사실, 숫자, 연도, 인물은 절대 지어내지 마세요.
+2. 개념 묻기, 옳은 것/옳지 않은 것 고르기, 사례에 적용하기, 원인과 결과, 비교 등 유형을 섞고, 단순 암기보다 이해를 묻는 문제를 섞으세요.
+3. explanation은 왜 그것이 답인지 1~2문장으로, 근거가 된 자료 내용을 들어 설명하세요.
+4. topic에는 문제의 근거가 된 자료 제목 맨 앞의 이름표(예: ${topicLabel(TOPICS[0].id)})를 그대로 쓰세요.
+5. 고등학생이 읽기 쉬운 우리말로 쓰고, ‘보기’ 기호(ㄱ, ㄴ, ㄷ)는 쓰지 마세요.
+
+유형별 규칙
+- choice(객관식): choices는 정확히 4개이고 서로 달라야 합니다. 정답은 하나뿐이고 오답은 그럴듯하지만 자료에 비추어 분명히 틀려야 합니다. answer에는 정답 선택지의 문장을 글자 하나 다르지 않게 그대로 쓰세요.
+- short(단답형): 답이 낱말이나 짧은 구 하나로 분명하게 정해지는 문제입니다. answer는 자료에 나온 용어 그대로 쓰고, accept에는 띄어쓰기가 다르거나 다른 이름으로 불리는 등 정답으로 인정할 표현을 넣으세요. choices는 비워 두세요.
+- essay(서술형): 1~3문장으로 설명·비교·이유를 쓰게 하는 문제입니다. answer에는 모범 답안을, points에는 채점할 때 꼭 들어가야 할 핵심 요소 2~3개를 자료에 근거해 쓰세요. choices는 비워 두세요.
+${seen.length ? `\n이미 낸 문제(같거나 비슷한 문제는 내지 마세요)\n${seen.map((q) => `- ${q}`).join("\n")}\n` : ""}
+[학습 자료]
+${material}`;
+}
+
+function gradePrompt(q, mine) {
+  return `너는 ${SUBJECT.name} 선생님이야. 학생의 ${q.type === "short" ? "단답형" : "서술형"} 답을 채점해 줘.
+
+문제: ${q.question}
+모범 답안: ${q.answer}
+${q.accept?.length ? `정답으로 인정할 다른 표현: ${q.accept.join(", ")}\n` : ""}${q.points?.length ? `채점 요소:\n${q.points.map((p) => `- ${p}`).join("\n")}\n` : ""}해설: ${q.explanation}
+
+학생 답: ${mine}
+
+채점 기준
+- 모범 답안과 같은 뜻이고 채점 요소를 모두 맞게 담았으면 "정답", 일부만 맞게 담았으면 "부분 정답", 틀렸거나 관련이 없으면 "오답".
+- 맞춤법·띄어쓰기·말투는 감점하지 않아. 표현이 달라도 뜻이 같으면 맞게 봐.
+- 학생 답에 틀린 내용이 들어 있으면 그 부분을 짚어 줘.
+- feedback은 학생에게 직접 말하듯 1~3문장으로, 무엇이 맞았고 무엇이 빠졌거나 틀렸는지 알려 줘.`;
+}
+
+const labelToId = new Map(TOPICS.map((tp) => [norm2(topicLabel(tp.id)), tp.id]));
+
+function cleanQuestion(q, ids) {
+  if (!q || typeof q.question !== "string" || !q.question.trim()) return null;
+  const type = ["choice", "short", "essay"].includes(q.type) ? q.type : Array.isArray(q.choices) && q.choices.length === 4 ? "choice" : null;
+  const answer = String(q.answer || "").trim();
+  if (!type || !answer) return null;
+  let topic = labelToId.get(norm2(q.topic || ""));
+  if (!topic || !ids.has(topic)) topic = [...ids][0];
+  const base = { ai: true, type, topic, question: q.question.trim(), answer, explanation: String(q.explanation || "").trim() };
+  if (type === "choice") {
+    const choices = (q.choices || []).map((c) => String(c).trim()).filter(Boolean);
+    if (choices.length !== 4 || new Set(choices).size !== 4 || !choices.includes(answer)) return null;
+    return { ...base, choices: shuffle(choices) };
+  }
+  const list = (v) => (Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean) : []);
+  if (type === "short" && answer.length > 40) return null;
+  if (type === "essay" && !list(q.points).length) return null;
+  return { ...base, accept: list(q.accept), points: list(q.points) };
+}
+
+async function askGemini(prompt, schema = AI_SCHEMA, temperature = 1) {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(geminiModel())}:generateContent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": geminiKey() },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: { temperature, responseMimeType: "application/json", responseSchema: schema },
+    }),
+  });
+  let data = null;
+  try {
+    data = await res.json();
+  } catch {}
+  if (!res.ok) {
+    const msg = data?.error?.message || "";
+    if (res.status === 400 && /api key/i.test(msg)) throw new Error("API 키가 올바르지 않아요. 키를 다시 확인해 주세요.");
+    if (res.status === 403) throw new Error("이 API 키로는 제미나이를 쓸 수 없어요. Google AI Studio에서 키를 확인해 주세요.");
+    if (res.status === 404) throw new Error(`모델 ‘${geminiModel()}’을(를) 찾을 수 없어요. 설정에서 다른 모델을 골라 주세요.`);
+    if (res.status === 429) throw new Error("제미나이 사용량이 잠깐 초과됐어요. 1분쯤 뒤에 다시 시도해 주세요.");
+    if (res.status >= 500) throw Object.assign(new Error("제미나이가 지금 붐벼요. 잠시 뒤 다시 시도해 주세요."), { retry: true });
+    throw new Error(`제미나이 오류 ${res.status}${msg ? `: ${msg}` : ""}`);
+  }
+  const text = (data?.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").join("");
+  if (!text) throw Object.assign(new Error("제미나이가 빈 답을 줬어요. 다시 시도해 주세요."), { retry: true });
+  return JSON.parse(text);
+}
+
+// 남은 문제가 2개 이하이면 다음 묶음을 미리 만들어 둔다
+async function fillAI() {
+  if (!quiz.endless || quiz.loading || quiz.items.length - quiz.i > 2) return;
+  quiz.loading = true;
+  quiz.error = "";
+  const session = (quiz.session = (quiz.session || 0) + 1);
+  try {
+    let added = 0;
+    for (let attempt = 0; attempt < 3 && !added; attempt++) {
+      const { text, ids } = aiMaterial();
+      let out;
+      try {
+        out = await askGemini(aiPrompt(text));
+      } catch (err) {
+        if (err.retry && attempt < 2) {
+          await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+          continue;
+        }
+        throw err;
+      }
+      if (session !== quiz.session || !quiz.endless) return;
+      for (const raw of out?.questions || []) {
+        const q = cleanQuestion(raw, ids);
+        if (!q) continue;
+        const k = norm2(q.question);
+        if (quiz.seen.some((x) => norm2(x) === k) || quiz.items.some((x) => norm2(x.question) === k)) continue;
+        rememberSeen(q.question);
+        quiz.items.push(q);
+        added++;
+      }
+    }
+    if (!added) throw new Error("제미나이가 쓸 만한 문제를 만들지 못했어요. 다시 시도해 주세요.");
+  } catch (err) {
+    if (session === quiz.session) quiz.error = err.message || String(err);
+  } finally {
+    if (session === quiz.session) quiz.loading = false;
+  }
+  // 문제를 기다리던 화면이면 다시 그린다
+  if (quiz.endless && quiz.state === "play" && route().tab === "quiz" && view.querySelector(".ai-loading, .ai-error")) renderQuizQuestion();
+  if (quiz.items.length - quiz.i <= 2 && !quiz.error) fillAI();
 }
 
 // ---------- 키워드 검색 ----------
@@ -1124,7 +1551,44 @@ document.addEventListener("click", (e) => {
   } else if (action === "quiz-start") startQuiz(false);
   else if (action === "quiz-retry") startQuiz(true);
   else if (action === "quiz-quit") {
+    if (quiz.state === "result") {
+      quiz.state = "setup";
+      renderQuiz();
+    } else endQuiz();
+  } else if (action === "scope-topic") {
+    const id = Number(t.dataset.id);
+    if (quizTopics.has(id)) quizTopics.delete(id);
+    else quizTopics.add(id);
+    saveScope();
+    renderQuiz();
+  } else if (action === "scope-unit") {
+    const u = UNITS.find((x) => x.id === Number(t.dataset.unit));
+    const allOn = u.topics.every((id) => quizTopics.has(id));
+    for (const id of u.topics) allOn ? quizTopics.delete(id) : quizTopics.add(id);
+    saveScope();
+    renderQuiz();
+  } else if (action === "scope-clear") {
+    quizTopics.clear();
+    saveScope();
+    renderQuiz();
+  } else if (action === "ai-key-change") {
+    view.querySelector("[data-ai-form]").hidden = false;
+    $("ai-key").focus();
+  } else if (action === "ai-key-clear") {
+    if (!confirm("이 기기에 저장된 제미나이 API 키를 지울까요?")) return;
+    try {
+      localStorage.removeItem(GEMINI_KEY);
+    } catch {}
+    renderQuiz();
+  } else if (action === "written-giveup") gradeWritten("");
+  else if (action === "ai-retry") {
+    quiz.error = "";
+    renderQuizQuestion();
+    fillAI();
+  } else if (action === "ai-settings") {
     quiz.state = "setup";
+    quiz.endless = false;
+    quiz.mode = "ai";
     renderQuiz();
   } else if (action === "quiz-pick") pickQuiz(t.dataset.key, t);
   else if (action === "quiz-order") {
@@ -1137,19 +1601,43 @@ document.addEventListener("click", (e) => {
     quiz.picked = [];
     renderQuizQuestion();
   } else if (action === "quiz-order-check") checkOrder();
-  else if (action === "quiz-next") {
-    quiz.i++;
-    quiz.picked = [];
-    if (quiz.i >= quiz.items.length) quiz.state = "result";
-    renderQuiz();
-    window.scrollTo(0, 0);
+  else if (action === "quiz-next") nextQuiz();
+});
+
+document.addEventListener("submit", (e) => {
+  if (e.target.matches("[data-written]")) {
+    e.preventDefault();
+    const mine = $("written-answer").value.trim();
+    if (!mine) return $("written-answer").focus();
+    $("written-answer").blur();
+    gradeWritten(mine);
+    return;
   }
+  if (!e.target.matches("[data-ai-form]")) return;
+  e.preventDefault();
+  const key = $("ai-key").value.trim();
+  if (!key) return;
+  try {
+    localStorage.setItem(GEMINI_KEY, key);
+  } catch {
+    alert("이 브라우저에서는 키를 저장할 수 없어요(개인 정보 보호 모드 등).");
+  }
+  $("ai-key").blur();
+  renderQuiz();
 });
 
 document.addEventListener("change", (e) => {
   const action = e.target.dataset.action;
-  if (action === "quiz-scope") quiz.scope = e.target.value;
-  else if (action === "quiz-count") quiz.count = Number(e.target.value);
+  if (action === "quiz-count") quiz.count = Number(e.target.value);
+  else if (action === "ai-qtype") {
+    try {
+      localStorage.setItem(AI_QTYPE_KEY, e.target.value);
+    } catch {}
+  } else if (action === "ai-model") {
+    try {
+      localStorage.setItem(GEMINI_MODEL_KEY, e.target.value);
+    } catch {}
+  }
   else return;
   renderQuiz();
 });
