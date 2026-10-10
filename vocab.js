@@ -8,7 +8,7 @@ pdfjs.GlobalWorkerOptions.workerSrc =
   "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.3.289/legacy/build/pdf.worker.min.mjs";
 
 // 여기에 vocab-script.gs 웹앱 URL(.../exec)을 붙여넣으세요.
-const VOCAB_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz7NQ3GXER29kr0WWJm4SjAjHrWggDHkggStY-qWmQdSIicSFREdPMMsDKVp4IUxg_E/exec";
+const VOCAB_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1xnnT39R7jxIjW6g2BuqgKZfXVyRn83Q_Tcc2hrzsUMbyeBWnBCzyFcnIUStlExr8/exec";
 
 // Day별 시작 쪽 (PDF 쪽 번호). Day N은 Day N+1 시작 전 쪽까지, Day 60은 LAST_PAGE까지.
 const DAY_START = [

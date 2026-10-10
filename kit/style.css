@@ -1430,38 +1430,6 @@ tr.flash {
   font-weight: 700;
 }
 
-.ai-key-ok {
-  margin: 0 0 8px;
-  font-size: 14px;
-}
-
-.ai-key-ok code {
-  padding: 2px 6px;
-  border-radius: 6px;
-  background: #fff;
-  font-size: 13px;
-}
-
-.ai-key-form {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.ai-key-form[hidden] {
-  display: none;
-}
-
-.ai-key-form input {
-  flex: 1;
-  min-width: 0;
-  padding: 10px 12px;
-  border: 1px solid var(--hairline);
-  border-radius: 12px;
-  font: inherit;
-  font-size: 16px;
-}
-
 .ai-model {
   display: inline-flex;
   align-items: center;

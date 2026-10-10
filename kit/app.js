@@ -767,7 +767,6 @@ function startQuiz(retryWrong) {
   if (retryWrong && quiz.wrong.length && quiz.mode !== "order") {
     quiz.items = shuffle(quiz.wrong.map((w) => w.item));
   } else if (quiz.mode === "ai") {
-    if (!geminiKey()) return renderQuiz();
     quiz.items = [];
     quiz.endless = true;
     quiz.seen = loadSeen();
@@ -798,11 +797,9 @@ function renderQuiz() {
 
   const pool = quizPool();
   const ai = quiz.mode === "ai";
-  const available = ai ? (pool.length && geminiKey() ? 1 : 0) : quiz.mode === "order" ? orderSets(pool, quiz.count).length : Math.min(pool.length, quiz.count);
+  const available = ai ? (pool.length ? 1 : 0) : quiz.mode === "order" ? orderSets(pool, quiz.count).length : Math.min(pool.length, quiz.count);
   const hint = ai
-    ? geminiKey()
-      ? "고른 주제의 핵심 정리만 근거로 문제를 5개씩 계속 만들어요. 서답형은 제미나이가 채점해 줘요. 그만하고 싶을 때 ‘그만하기’를 누르세요."
-      : "먼저 아래에 제미나이 API 키를 넣어 주세요."
+    ? "고른 주제의 핵심 정리만 근거로 문제를 5개씩 계속 만들어요. 서답형은 제미나이가 채점해 줘요. 그만하고 싶을 때 ‘그만하기’를 누르세요."
     : available
       ? `이 범위에서 ${available}문제를 낼 수 있어요.`
       : "이 범위로는 문제를 만들 수 없어요. 범위를 넓혀 주세요.";
@@ -1047,21 +1044,19 @@ function renderQuizResult() {
 }
 
 // ---------- AI 문제 (제미나이) ----------
-// 키는 이 기기 브라우저에만 저장하고 구글 제미나이 API로만 보낸다. 저장소(공개)에는 절대 넣지 않는다.
-
-const GEMINI_KEY = "gemini-api-key";
-const GEMINI_MODEL_KEY = "gemini-model";
-const GEMINI_MODELS = ["gemini-3.5-flash", "gemini-3.5-flash-lite"];
+// 제미나이 키는 Apps Script 웹앱(vocab-script.gs)의 스크립트 속성에만 있다. 사이트는 웹앱 주소만 부른다.
+// 이 주소는 vocab.js 의 VOCAB_SCRIPT_URL 과 같다(웹앱을 새 배포로 바꾸면 둘 다 바꾼다).
+const GEMINI_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby1xnnT39R7jxIjW6g2BuqgKZfXVyRn83Q_Tcc2hrzsUMbyeBWnBCzyFcnIUStlExr8/exec";
 const AI_BATCH = 5;
 const fmtScore = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 
 // 문제 유형: 객관식(4지선다) · 단답형(낱말·짧은 구) · 서술형(1~3문장, AI가 채점)
 const AI_TYPES = {
-  mix: { name: "섞어서 (객관식 3 + 단답형 1 + 서술형 1)", plan: "객관식(choice) 3개, 단답형(short) 1개, 서술형(essay) 1개" },
-  choice: { name: "객관식만 (4지선다)", plan: "객관식(choice) 5개" },
-  written: { name: "서답형만 (단답형 3 + 서술형 2)", plan: "단답형(short) 3개, 서술형(essay) 2개" },
-  short: { name: "단답형만", plan: "단답형(short) 5개" },
-  essay: { name: "서술형만", plan: "서술형(essay) 5개" },
+  mix: { name: "섞어서 (객관식 3 + 단답형 1 + 서술형 1)", plan: "객관식(choice) 3개, 단답형(short) 1개, 서술형(essay) 1개", types: ["choice", "short", "essay"] },
+  choice: { name: "객관식만 (4지선다)", plan: "객관식(choice) 5개", types: ["choice"] },
+  written: { name: "서답형만 (단답형 3 + 서술형 2)", plan: "단답형(short) 3개, 서술형(essay) 2개 (객관식은 내지 마세요)", types: ["short", "essay"] },
+  short: { name: "단답형만", plan: "단답형(short) 5개 (다른 유형은 내지 마세요)", types: ["short"] },
+  essay: { name: "서술형만", plan: "서술형(essay) 5개 (다른 유형은 내지 마세요)", types: ["essay"] },
 };
 const AI_QTYPE_KEY = "gemini-qtype";
 function aiQType() {
@@ -1082,47 +1077,16 @@ function rememberSeen(question) {
   save(SEEN_KEY, quiz.seen);
 }
 
-function geminiKey() {
-  try {
-    return localStorage.getItem(GEMINI_KEY) || "";
-  } catch {
-    return "";
-  }
-}
-function geminiModel() {
-  try {
-    return localStorage.getItem(GEMINI_MODEL_KEY) || GEMINI_MODELS[0];
-  } catch {
-    return GEMINI_MODELS[0];
-  }
-}
-
 function aiSettingsHTML() {
-  const key = geminiKey();
-  const model = geminiModel();
   return `
     <div class="ai-settings" id="ai-settings">
-      <p class="ai-title">제미나이 설정</p>
-      ${key
-        ? `<p class="ai-key-ok">✓ API 키가 이 기기에 저장되어 있어요 <code>${esc(key.slice(0, 4))}…${esc(key.slice(-4))}</code>
-            <button type="button" class="link" data-action="ai-key-change">바꾸기</button>
-            <button type="button" class="link" data-action="ai-key-clear">지우기</button></p>`
-        : ""}
-      <form class="ai-key-form" data-ai-form${key ? " hidden" : ""}>
-        <input type="password" id="ai-key" placeholder="제미나이 API 키 붙여넣기 (AIza…)" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="제미나이 API 키" />
-        <button type="submit" class="btn primary">저장</button>
-      </form>
+      <p class="ai-title">AI 문제 설정</p>
       <label class="ai-model">문제 유형
         <select data-action="ai-qtype">
           ${Object.entries(AI_TYPES).map(([k, v]) => `<option value="${k}"${k === aiQType() ? " selected" : ""}>${v.name}</option>`).join("")}
         </select>
       </label>
-      <label class="ai-model">모델
-        <select data-action="ai-model">
-          ${[...new Set([...GEMINI_MODELS, model])].map((m) => `<option value="${esc(m)}"${m === model ? " selected" : ""}>${esc(m)}${m === GEMINI_MODELS[0] ? " (기본)" : m.endsWith("lite") ? " (더 빠름)" : ""}</option>`).join("")}
-        </select>
-      </label>
-      <p class="ai-note">키는 이 기기의 브라우저에만 저장되고 구글 제미나이 서버로만 보내져요. 여러 사람이 같이 쓰는 기기에서는 저장하지 마세요. 키는 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio ↗</a>에서 확인할 수 있어요.</p>
+      <p class="ai-note">문제는 구글 제미나이가 만들고 채점해요. 키를 넣을 필요 없이 바로 쓸 수 있어요.</p>
     </div>`;
 }
 
@@ -1185,6 +1149,13 @@ const GRADE_SCHEMA = {
   required: ["result", "feedback"],
 };
 
+// 고른 문제 유형만 쓸 수 있게 형식(스키마)을 좁힌다
+function aiSchema() {
+  const types = AI_TYPES[aiQType()].types;
+  const item = AI_SCHEMA.properties.questions.items;
+  return { ...AI_SCHEMA, properties: { questions: { ...AI_SCHEMA.properties.questions, items: { ...item, properties: { ...item.properties, type: { type: "STRING", enum: types } } } } } };
+}
+
 function aiPrompt(material) {
   const seen = shuffle((quiz.seen || []).slice(-120)).slice(0, 40);
   return `과목: ${SUBJECT.name} (대한민국 2022 개정 교육과정 고등학교)
@@ -1197,6 +1168,7 @@ function aiPrompt(material) {
 3. explanation은 왜 그것이 답인지 1~2문장으로, 근거가 된 자료 내용을 들어 설명하세요.
 4. topic에는 문제의 근거가 된 자료 제목 맨 앞의 이름표(예: ${topicLabel(TOPICS[0].id)})를 그대로 쓰세요.
 5. 고등학생이 읽기 쉬운 우리말로 쓰고, ‘보기’ 기호(ㄱ, ㄴ, ㄷ)는 쓰지 마세요.
+6. 문제·해설에 ‘학습 자료’, ‘자료에 따르면’ 같은 말은 쓰지 말고, 시험 문제처럼 바로 물어보세요(예: “다음 중 발열 반응의 예로 옳은 것은?”).
 
 유형별 규칙
 - choice(객관식): choices는 정확히 4개이고 서로 달라야 합니다. 정답은 하나뿐이고 오답은 그럴듯하지만 자료에 비추어 분명히 틀려야 합니다. answer에는 정답 선택지의 문장을 글자 하나 다르지 않게 그대로 쓰세요.
@@ -1208,7 +1180,7 @@ ${material}`;
 }
 
 function gradePrompt(q, mine) {
-  return `너는 ${SUBJECT.name} 선생님이야. 학생의 ${q.type === "short" ? "단답형" : "서술형"} 답을 채점해 줘.
+  return `당신은 ${SUBJECT.name} 선생님입니다. 학생의 ${q.type === "short" ? "단답형" : "서술형"} 답을 채점해 주세요.
 
 문제: ${q.question}
 모범 답안: ${q.answer}
@@ -1218,9 +1190,9 @@ ${q.accept?.length ? `정답으로 인정할 다른 표현: ${q.accept.join(", "
 
 채점 기준
 - 모범 답안과 같은 뜻이고 채점 요소를 모두 맞게 담았으면 "정답", 일부만 맞게 담았으면 "부분 정답", 틀렸거나 관련이 없으면 "오답".
-- 맞춤법·띄어쓰기·말투는 감점하지 않아. 표현이 달라도 뜻이 같으면 맞게 봐.
-- 학생 답에 틀린 내용이 들어 있으면 그 부분을 짚어 줘.
-- feedback은 학생에게 직접 말하듯 1~3문장으로, 무엇이 맞았고 무엇이 빠졌거나 틀렸는지 알려 줘.`;
+- 맞춤법·띄어쓰기·말투는 감점하지 않습니다. 표현이 달라도 뜻이 같으면 맞게 봅니다.
+- 학생 답에 틀린 내용이 들어 있으면 그 부분을 짚어 주세요.
+- feedback은 학생에게 직접 말하듯 친절한 해요체(~해요, ~예요)로 1~3문장 쓰고, 무엇이 맞았고 무엇이 빠졌거나 틀렸는지 알려 주세요.`;
 }
 
 const labelToId = new Map(TOPICS.map((tp) => [norm2(topicLabel(tp.id)), tp.id]));
@@ -1229,7 +1201,7 @@ function cleanQuestion(q, ids) {
   if (!q || typeof q.question !== "string" || !q.question.trim()) return null;
   const type = ["choice", "short", "essay"].includes(q.type) ? q.type : Array.isArray(q.choices) && q.choices.length === 4 ? "choice" : null;
   const answer = String(q.answer || "").trim();
-  if (!type || !answer) return null;
+  if (!type || !answer || !AI_TYPES[aiQType()].types.includes(type)) return null;
   let topic = labelToId.get(norm2(q.topic || ""));
   if (!topic || !ids.has(topic)) topic = [...ids][0];
   const base = { ai: true, type, topic, question: q.question.trim(), answer, explanation: String(q.explanation || "").trim() };
@@ -1241,34 +1213,39 @@ function cleanQuestion(q, ids) {
   const list = (v) => (Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean) : []);
   if (type === "short" && answer.length > 40) return null;
   if (type === "essay" && !list(q.points).length) return null;
-  return { ...base, accept: list(q.accept), points: list(q.points) };
+  const accept = [...new Set(list(q.accept))].filter((a) => norm2(a) !== norm2(answer));
+  return { ...base, accept, points: list(q.points) };
 }
 
 async function askGemini(prompt, schema = AI_SCHEMA, temperature = 1) {
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(geminiModel())}:generateContent`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": geminiKey() },
-    body: JSON.stringify({
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      generationConfig: { temperature, responseMimeType: "application/json", responseSchema: schema },
-    }),
-  });
-  let data = null;
+  let data;
   try {
+    // text/plain으로 보내면 Apps Script가 CORS 사전 요청 없이 받고, 응답도 읽을 수 있다
+    const res = await fetch(GEMINI_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "quiz", prompt, schema, temperature }),
+      signal: AbortSignal.timeout(90000),
+    });
     data = await res.json();
-  } catch {}
-  if (!res.ok) {
-    const msg = data?.error?.message || "";
-    if (res.status === 400 && /api key/i.test(msg)) throw new Error("API 키가 올바르지 않아요. 키를 다시 확인해 주세요.");
-    if (res.status === 403) throw new Error("이 API 키로는 제미나이를 쓸 수 없어요. Google AI Studio에서 키를 확인해 주세요.");
-    if (res.status === 404) throw new Error(`모델 ‘${geminiModel()}’을(를) 찾을 수 없어요. 설정에서 다른 모델을 골라 주세요.`);
-    if (res.status === 429) throw new Error("제미나이 사용량이 잠깐 초과됐어요. 1분쯤 뒤에 다시 시도해 주세요.");
-    if (res.status >= 500) throw Object.assign(new Error("제미나이가 지금 붐벼요. 잠시 뒤 다시 시도해 주세요."), { retry: true });
-    throw new Error(`제미나이 오류 ${res.status}${msg ? `: ${msg}` : ""}`);
+  } catch (err) {
+    if (err.name === "TimeoutError") throw Object.assign(new Error("제미나이 응답이 너무 늦어요. 다시 시도해 주세요."), { retry: true });
+    throw Object.assign(new Error("제미나이에 연결하지 못했어요. 인터넷 연결을 확인해 주세요."), { retry: true });
   }
-  const text = (data?.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").join("");
-  if (!text) throw Object.assign(new Error("제미나이가 빈 답을 줬어요. 다시 시도해 주세요."), { retry: true });
-  return JSON.parse(text);
+  if (!data.ok) {
+    const msg = String(data.error || "");
+    if (/이미지가 없어요/.test(msg)) throw new Error("AI 퀴즈 서버가 아직 예전 버전이에요. Apps Script를 새 코드로 다시 배포해 주세요.");
+    if (/오류 (500|503)/.test(msg)) throw Object.assign(new Error("제미나이가 지금 붐벼요. 잠시 뒤 다시 시도해 주세요."), { retry: true });
+    if (/오류 429/.test(msg)) throw new Error("제미나이 사용량이 잠깐 초과됐어요. 1분쯤 뒤에 다시 시도해 주세요.");
+    if (/오류 (400|403)/.test(msg) && /key/i.test(msg)) throw new Error("서버의 제미나이 키가 올바르지 않아요. Apps Script의 GEMINI_API_KEY를 확인해 주세요.");
+    if (/오류 404/.test(msg)) throw new Error("서버에 설정된 제미나이 모델을 찾을 수 없어요. Apps Script의 GEMINI_MODEL을 확인해 주세요.");
+    throw new Error(`제미나이 오류: ${msg || "알 수 없는 오류"}`);
+  }
+  try {
+    return JSON.parse(data.text);
+  } catch {
+    throw Object.assign(new Error("제미나이가 알아볼 수 없는 답을 줬어요. 다시 시도해 주세요."), { retry: true });
+  }
 }
 
 // 남은 문제가 2개 이하이면 다음 묶음을 미리 만들어 둔다
@@ -1283,7 +1260,7 @@ async function fillAI() {
       const { text, ids } = aiMaterial();
       let out;
       try {
-        out = await askGemini(aiPrompt(text));
+        out = await askGemini(aiPrompt(text), aiSchema());
       } catch (err) {
         if (err.retry && attempt < 2) {
           await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
@@ -1571,15 +1548,6 @@ document.addEventListener("click", (e) => {
     quizTopics.clear();
     saveScope();
     renderQuiz();
-  } else if (action === "ai-key-change") {
-    view.querySelector("[data-ai-form]").hidden = false;
-    $("ai-key").focus();
-  } else if (action === "ai-key-clear") {
-    if (!confirm("이 기기에 저장된 제미나이 API 키를 지울까요?")) return;
-    try {
-      localStorage.removeItem(GEMINI_KEY);
-    } catch {}
-    renderQuiz();
   } else if (action === "written-giveup") gradeWritten("");
   else if (action === "ai-retry") {
     quiz.error = "";
@@ -1613,17 +1581,6 @@ document.addEventListener("submit", (e) => {
     gradeWritten(mine);
     return;
   }
-  if (!e.target.matches("[data-ai-form]")) return;
-  e.preventDefault();
-  const key = $("ai-key").value.trim();
-  if (!key) return;
-  try {
-    localStorage.setItem(GEMINI_KEY, key);
-  } catch {
-    alert("이 브라우저에서는 키를 저장할 수 없어요(개인 정보 보호 모드 등).");
-  }
-  $("ai-key").blur();
-  renderQuiz();
 });
 
 document.addEventListener("change", (e) => {
@@ -1632,10 +1589,6 @@ document.addEventListener("change", (e) => {
   else if (action === "ai-qtype") {
     try {
       localStorage.setItem(AI_QTYPE_KEY, e.target.value);
-    } catch {}
-  } else if (action === "ai-model") {
-    try {
-      localStorage.setItem(GEMINI_MODEL_KEY, e.target.value);
     } catch {}
   }
   else return;

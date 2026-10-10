@@ -138,3 +138,14 @@ const VOCAB_SCRIPT_URL = "https://script.google.com/macros/s/……/exec";
 - 결과는 페이지를 새로고침하면 사라지니, 다 모으면 바로 복사해 두세요.
 - 웹앱 URL을 아는 사람은 누구나 이 웹앱(내 Gemini 무료 사용량)을 쓸 수 있어요. 저장소가 공개라서 URL도 공개돼요.
   걱정되면 AI Studio에서 키를 지우고 새로 만들어 스크립트 속성만 바꾸면 돼요.
+
+# 공부 페이지 AI 퀴즈 (Gemini)
+
+한국사2·통합사회2·통합과학2 페이지의 **퀴즈 → ✨ AI 문제**는 단어 모으기와 **같은 Apps Script 웹앱**(`vocab-script.gs`)을 거쳐 Gemini를 불러요.
+Gemini API 키는 그 웹앱의 스크립트 속성(`GEMINI_API_KEY`)에만 있고, 사이트 코드(공개 저장소)에는 들어가지 않아요. 그래서 사이트에서는 키를 넣지 않고 바로 쓸 수 있어요.
+
+- 웹앱 주소는 `kit/app.js`의 `GEMINI_SCRIPT_URL`이에요. `vocab.js`의 `VOCAB_SCRIPT_URL`과 같아야 해요.
+- `vocab-script.gs`를 고쳤으면 Apps Script 편집기에 새 코드를 붙여 넣고 **배포 → 배포 관리 → ✏️ 수정 → 버전: 새 버전 → 배포**를 눌러요. 이렇게 하면 주소가 바뀌지 않아요(‘새 배포’를 누르면 주소가 바뀌니 주의).
+- 웹앱 주소를 열었을 때 `… API key: OK · quiz: ready`가 보이면 퀴즈 준비 끝이에요.
+- (선택) 스크립트 속성 `GEMINI_QUIZ_MODEL`로 퀴즈에만 다른 모델을 쓸 수 있어요. 비워 두면 `GEMINI_MODEL`(없으면 기본 모델)을 써요.
+- 사이트를 쓰는 사람은 누구나 내 Gemini 무료 사용량을 함께 써요. 웹앱은 지시문 길이(4만 자)와 설정값을 제한해요.
